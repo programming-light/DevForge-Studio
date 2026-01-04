@@ -216,9 +216,19 @@ const AcademyMode: React.FC<AcademyModeProps> = ({
             </div>
 
             <div className="flex-1 flex flex-col min-h-[400px]">
-              <div className="h-10 bg-[#1c2128] border-b border-[#30363d] flex items-center px-6 space-x-3 shrink-0">
-                <Code2 className="w-3.5 h-3.5 text-blue-400" />
-                <span className="text-[9px] font-black text-[#8b949e] uppercase tracking-[0.3em]">Source Input Practice</span>
+              <div className="h-10 bg-[#1c2128] border-b border-[#30363d] flex items-center justify-between px-6 shrink-0">
+                <div className="flex items-center space-x-3">
+                  <Code2 className="w-3.5 h-3.5 text-blue-400" />
+                  <span className="text-[9px] font-black text-[#8b949e] uppercase tracking-[0.3em]">Source Input Practice</span>
+                </div>
+                <div className="flex items-center space-x-2 lg:hidden">
+                  {!showTerminalOnly && (
+                    <button onClick={() => setIsPreviewOpen(!isPreviewOpen)} className={`p-2 rounded-lg ${isPreviewOpen ? 'text-blue-400 bg-blue-500/10' : 'text-[#8b949e]'}`}><Globe className="w-4 h-4" /></button>
+                  )}
+                  {showTerminalEnabled && (
+                    <button onClick={() => setIsTerminalOpen(!isTerminalOpen)} className={`p-2 rounded-lg ${isTerminalOpen ? 'text-green-400 bg-green-500/10' : 'text-[#8b949e]'}`}><TerminalIcon className="w-4 h-4" /></button>
+                  )}
+                </div>
               </div>
               <div className="flex-1 relative">
                 <CodeEditor key={activeLessonId} value={code} onChange={setCode} language={subjectId === 'py' ? 'python' : (subjectId === 'js' ? 'javascript' : 'html')} />
@@ -266,7 +276,7 @@ const AcademyMode: React.FC<AcademyModeProps> = ({
           )}
 
           {/* Right Toolbar */}
-          <div className="w-14 bg-[#0d1117] border-l border-[#30363d] flex flex-col items-center pt-8 space-y-8 z-30 shrink-0">
+          <div className="w-14 bg-[#0d1117] border-l border-[#30363d] hidden lg:flex flex-col items-center pt-8 space-y-8 z-30 shrink-0">
             {!showTerminalOnly && (
               <button onClick={() => setIsPreviewOpen(!isPreviewOpen)} className={`p-3 rounded-xl transition-all ${isPreviewOpen ? 'text-blue-400 bg-blue-500/10 border border-blue-500/20' : 'text-[#484f58] hover:text-white'}`}><Globe className="w-5 h-5" /></button>
             )}
