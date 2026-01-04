@@ -9,7 +9,10 @@ import Dashboard from './components/Dashboard';
 import JSZip from 'jszip';
 
 const App: React.FC = () => {
-  const [mode, setMode] = useState<AppMode>(AppMode.ACADEMY);
+  const [mode, setMode] = useState<AppMode>(() => {
+    const saved = localStorage.getItem('master_ide_mode');
+    return saved ? (JSON.parse(saved) as AppMode) : AppMode.ACADEMY;
+  });
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   
@@ -50,6 +53,7 @@ const App: React.FC = () => {
     return saved ? parseInt(saved, 10) : 1000;
   });
 
+  useEffect(() => localStorage.setItem('master_ide_mode', JSON.stringify(mode)), [mode]);
   useEffect(() => localStorage.setItem('master_ide_subjects', JSON.stringify(subjects)), [subjects]);
   useEffect(() => localStorage.setItem('master_ide_lessons', JSON.stringify(lessons)), [lessons]);
   useEffect(() => localStorage.setItem('master_ide_files', JSON.stringify(workspaceFiles)), [workspaceFiles]);

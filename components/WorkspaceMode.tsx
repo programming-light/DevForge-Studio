@@ -153,11 +153,30 @@ const WorkspaceMode: React.FC<WorkspaceModeProps> = ({
         if (result) String(result).split('\n').forEach(line => addLog(line));
       } catch (err: any) { addLog(err.message, 'error'); }
     } else if (ext === 'js' || ext === 'jsx') {
+      const oldLog = console.log;
+      console.log = (...args: any[]) => {
+        const message = args.map(arg => {
+          try {
+            if (typeof arg === 'object' && arg !== null) {
+              return JSON.stringify(arg);
+            }
+            return String(arg);
+          } catch (e) {
+            return 'Unserializable object';
+          }
+        }).join(' ');
+        addLog(message);
+      };
+
       try {
         const runner = new Function(activeFile.content || '');
         runner();
         addLog('Script execution complete.', 'info');
-      } catch (err: any) { addLog(err.message, 'error'); }
+      } catch (err: any) { 
+        addLog(err.message, 'error');
+      } finally {
+        console.log = oldLog;
+      }
     } else {
       addLog(`Execution not supported for .${ext} directly. Use Preview.`, 'info');
     }

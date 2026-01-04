@@ -168,7 +168,7 @@ const Terminal: React.FC<TerminalProps> = ({ logs, onCommand, interactive }) => 
             fontVariantLigatures: 'none',
             letterSpacing: '0px'
           }}
-          placeholder={interactive ? "" : "npm install, npm create vite..."}
+          placeholder={interactive ? "" : "Type 'clear' to clear output..."}
           value={command}
           onChange={e => setCommand(e.target.value)}
           onKeyDown={handleKeyDown}
