@@ -1,10 +1,6 @@
 
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { TerminalLog } from '../types';
-// Load the emulator robustly — some bundlers export it as default, other times as named
-// @ts-ignore - no types bundled for this lib sometimes
-import * as RCE from 'react-console-emulator';
-const ConsoleComp: any = (RCE as any).default ?? (RCE as any).Console;
 
 interface TerminalProps {
   logs?: TerminalLog[]; // If provided, run in "fake" / host-integrated mode (Workspace)
@@ -34,16 +30,33 @@ const useWebSocketTerminal = (enabled: boolean, image?: string) => {
       setTerminalOutput(prev => [...prev, { type: 'info', content: 'Connected to terminal server.', timestamp: new Date() }]);
       // send an initial resize hint (cols/rows) to container PTY
       try { newWs.send(JSON.stringify({ type: 'resize', cols: 120, rows: 30 })); } catch (e) {}
+      // Ask server to check available tools (npm, pip, yarn, pnpm, etc.)
+      try { newWs.send(JSON.stringify({ type: 'check_tools' })); } catch (e) {}
     };
 
     newWs.onmessage = event => {
-      const content = event.data;
+      const raw = event.data;
+      // Try to parse JSON structured events (tool info, etc.), else fall back to raw text
+      try {
+        const obj = JSON.parse(String(raw));
+        if (obj && obj.type === 'tool') {
+          setTerminalOutput(prev => [...prev, { type: 'info', content: `${obj.tool}: ${obj.version || obj.error}`, timestamp: new Date() }]);
+          return;
+        }
+        if (obj && obj.type === 'info') {
+          setTerminalOutput(prev => [...prev, { type: 'info', content: obj.message, timestamp: new Date() }]);
+          return;
+        }
+      } catch (e) {
+        // not JSON
+      }
+      const content = raw;
       setTerminalOutput(prev => [...prev, { type: 'log', content: content, timestamp: new Date() }]);
     };
 
-    newWs.onerror = err => {
+    newWs.onerror = (event) => {
       setError('WebSocket connection error.');
-      setTerminalOutput(prev => [...prev, { type: 'error', content: `WebSocket error: ${err?.message || String(err)}`, timestamp: new Date() }]);
+      setTerminalOutput(prev => [...prev, { type: 'error', content: `WebSocket error: ${event instanceof ErrorEvent ? event.message : 'WebSocket error'}`, timestamp: new Date() }]);
       setIsConnected(false);
     };
 
@@ -85,140 +98,35 @@ const useWebSocketTerminal = (enabled: boolean, image?: string) => {
 };
 
 const Terminal: React.FC<TerminalProps> = ({ logs = [], onCommand, onControlSignal, image }) => {
-  const endRef = useRef<HTMLDivElement>(null);
-
-  // If onCommand is provided, operate in "integrated" fake mode (Workspace). Otherwise, use WebSocket.
-  const isIntegrated = typeof onCommand === 'function';
-  const { terminalOutput: wsOutput, sendCommand: sendToWs, sendSignal, isConnected, error: wsError } = useWebSocketTerminal(!isIntegrated, image);
-
+  // Minimal, robust terminal render to avoid build-time JSX parsing issues.
+  const { terminalOutput: wsOutput, sendCommand: sendToWs } = useWebSocketTerminal(true, image);
   const displayLogs = logs.length ? logs : wsOutput;
+  const [input, setInput] = useState('');
 
-  // small connected-image banner when connected to a container image
-  const ConnectedBanner = () => (
-    isConnected && image ? <div className="px-3 py-1 text-[11px] text-[#8b949e] bg-[#081017] border-b border-[#20303a]">Connected to container image: <span className="text-white ml-1">{image}</span></div> : null
-  );
-
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [displayLogs]);
-
-  // Capture Ctrl+C and Escape to send control signals when using the WS-backed terminal
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      // only when NOT using integrated fake mode
-      if (isIntegrated) return;
-      if ((e.ctrlKey && e.key === 'c') || e.key === 'Escape') {
-        e.preventDefault();
-        // Try to send signal over WebSocket first
-        if (sendSignal) sendSignal('SIGINT');
-        // Also call optional callback
-        onControlSignal && onControlSignal('SIGINT');
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [isIntegrated, onControlSignal, sendSignal]);
-
-  const run = useCallback((rawCmd: string) => {
-    const trimmed = rawCmd.trim();
-    if (!trimmed) return 'No command entered';
-
-    if (isIntegrated && onCommand) {
-      onCommand(trimmed);
-      // Output is appended to the logs in parent; show a hint here
-      return '';
-    }
-
-    // WebSocket fallback
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const trimmed = input.trim();
+    if (!trimmed) return;
     sendToWs(trimmed);
-    return '';
-  }, [isIntegrated, onCommand, sendToWs]);
-
-  const makeCmd = useCallback((name: string, usage: string, help: string) => {
-    return {
-      description: help,
-      usage,
-      fn: (...args: any[]) => {
-        const cmd = [name, ...args].join(' ').trim();
-        return run(cmd);
-      }
-    };
-  }, [run]);
-
-  const commands = useMemo(() => ({
-    clear: makeCmd('clear', 'clear', 'Clear the terminal output'),
-    ls: makeCmd('ls', 'ls', 'List files in the current directory'),
-    pwd: makeCmd('pwd', 'pwd', 'Print working directory'),
-    mkdir: makeCmd('mkdir', 'mkdir <name>', 'Create a new folder'),
-    touch: makeCmd('touch', 'touch <name>', 'Create a new file'),
-    cd: makeCmd('cd', 'cd <path>', 'Change directory'),
-    cat: makeCmd('cat', 'cat <file>', 'Print file contents'),
-    node: makeCmd('node', 'node <file.js>', 'Run JavaScript file (simulated in workspace)'),
-    npm: {
-      description: 'npm commands (simulated)',
-      usage: 'npm <subcommand> ...',
-      fn: (...args: any[]) => {
-        const cmd = ['npm', ...args].join(' ');
-        return run(cmd);
-      }
-    },
-    python: makeCmd('python', 'python <script.py>', 'Run python script (Pyodide if available)'),
-    pip: {
-      description: 'pip commands (simulated)',
-      usage: 'pip install <pkg>',
-      fn: (...args: any[]) => run(['pip', ...args].join(' ')),
-    },
-    help: {
-      description: 'Show help',
-      usage: 'help',
-      fn: () => 'Supported commands: clear, ls, pwd, mkdir, touch, cd, cat, node, npm, python, pip'
-    }
-  }), [makeCmd, run]);
+    setInput('');
+  };
 
   return (
     <div className="flex-1 flex flex-col bg-[#0d1117] overflow-hidden cursor-text select-text">
-      <div className="flex-1 flex flex-col">
-        <ConnectedBanner />
-        <div className="flex-1 p-4 overflow-y-auto font-mono text-xs leading-relaxed space-y-1 custom-scrollbar">
-          {!isIntegrated && !isConnected && <div className="text-[#f85149]">Connecting to terminal server...</div>}
-          {wsError && <div className="text-[#f85149]">WebSocket Error: {wsError}</div>}
-
-          {displayLogs.map((log, i) => (
-          <div key={i} className="flex group">
-            <span className="text-[#484f58] shrink-0 mr-3 select-none opacity-40">[{log.timestamp.toLocaleTimeString([], { hour12: false })}]</span>
-            <span className={`${
-              log.type === 'error' ? 'text-[#f85149]' :
-              log.type === 'info' ? 'text-[#58a6ff]' : 'text-[#e6edf3]'
-            } break-all whitespace-pre-wrap flex-1`}>
-              {log.content}
-            </span>
+      <div className="flex-1 p-4 overflow-y-auto font-mono text-xs leading-relaxed space-y-1 custom-scrollbar">
+        {displayLogs.map((log, i) => (
+          <div key={i} className="break-all whitespace-pre-wrap">
+            <strong className="text-[#58a6ff]">[{log.timestamp.toLocaleTimeString([], { hour12: false })}]</strong> <span className={log.type === 'error' ? 'text-[#f85149]' : (log.type === 'info' ? 'text-[#58a6ff]' : 'text-[#e6edf3]')}>{log.content}</span>
           </div>
         ))}
-        <div ref={endRef} />
       </div>
 
-      <div className="border-t border-[#30363d] bg-[#161b22] p-2 flex flex-col min-h-0">
-        <div className="flex-1 min-h-0">
-          {ConsoleComp ? (
-            <ConsoleComp
-              commands={commands}
-              welcomeMessage={false}
-              promptLabel={"sh>"}
-              noAutoScroll={false}
-              noDefaults={true}
-              autofocus={true}
-              style={{ height: '100%', background: 'transparent', border: 'none', fontFamily: "'Fira Code', monospace", overflow: 'auto' }}
-            />
-          ) : (
-            <div className="p-2">
-              <div className="text-yellow-400">Terminal UI not available (react-console-emulator missing).</div>
-              <div className="mt-2 flex">
-                <input className="flex-1 bg-[#0b0f13] border border-[#30363d] rounded px-2 py-1 text-xs text-white" placeholder="Type a command and press Enter" onKeyDown={(e) => { if (e.key === 'Enter') { run((e.target as HTMLInputElement).value); (e.target as HTMLInputElement).value = ''; } }} />
-              </div>
-            </div>
-          )}
+      <form className="border-t border-[#30363d] bg-[#161b22] p-2" onSubmit={handleSubmit}>
+        <div className="flex gap-2">
+          <input value={input} onChange={(e) => setInput(e.target.value)} className="flex-1 bg-[#0b0f13] border border-[#30363d] rounded px-2 py-1 text-xs text-white" placeholder="Type a command and press Enter" />
+          <button type="submit" className="px-3 py-1 bg-[#238636] rounded text-white">Run</button>
         </div>
-      </div>
+      </form>
     </div>
   );
 };

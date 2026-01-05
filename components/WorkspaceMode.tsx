@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import CodeEditor from './CodeEditor';
 import Preview from './Preview';
-import Terminal from './Terminal';
+import FakeTerminal from './FakeTerminal';
 import usePyodide from '../hooks/usePyodide';
 
 interface WorkspaceModeProps {
@@ -67,6 +67,7 @@ const WorkspaceMode: React.FC<WorkspaceModeProps> = ({
   
   const [dependencies, setDependencies] = useState<Record<string, string>>({});
   const [currentDirectory, setCurrentDirectory] = useState<string>('root');
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
 
   const saveTimeoutRef = useRef<number | null>(null);
 
@@ -81,7 +82,54 @@ const WorkspaceMode: React.FC<WorkspaceModeProps> = ({
       }
     };
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    
+    // Global keyboard shortcuts
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+Shift+P: Open command palette
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        setShowCommandPalette(true);
+      }
+      // Ctrl+P: Quick open file
+      else if (e.ctrlKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        // Implement quick open functionality
+        setIsSidebarOpen(true); // Ensure sidebar is open
+      }
+      // Ctrl+N: New file
+      else if (e.ctrlKey && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        setNewItem({ parentId: 'root', type: 'file' });
+      }
+      // Ctrl+Shift+N: New folder
+      else if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        setNewItem({ parentId: 'root', type: 'folder' });
+      }
+      // Ctrl+Shift+F: Format code
+      else if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        if (activeFileId && activeFile) {
+          // Trigger formatting in the active editor
+          const editorInstance = window.monaco && window.monaco.editor.getModels().find(model => model.uri.toString().includes(activeFileId));
+          if (editorInstance) {
+            // Format the document
+            window.monaco.editor.getModels().forEach(model => {
+              if (model.uri.toString().includes(activeFileId)) {
+                window.monaco.editor.getAction('editor.action.formatDocument').run();
+              }
+            });
+          }
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   // Sidebar resize state (draggable resizer)
@@ -203,6 +251,7 @@ const WorkspaceMode: React.FC<WorkspaceModeProps> = ({
   const [renamingName, setRenamingName] = useState('');
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const contextRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, visible: boolean, targetId: string | null, targetType: 'file' | 'folder' | 'root' }>({
     x: 0, y: 0, visible: false, targetId: null, targetType: 'file'
   });
@@ -485,7 +534,12 @@ const WorkspaceMode: React.FC<WorkspaceModeProps> = ({
     <script type="module" src="/main.js"></script>
   </body>
 </html>` },
-                    { name: 'main.js', content: `import './style.css'\n\ndocument.querySelector('#root').innerHTML = \`\n  <h1>Hello Vite!</h1>\n  <a href="https://vitejs.dev/guide/features.html" target="_blank">Documentation</a>\n\` `},
+                    { name: 'main.js', content: `import './style.css'
+
+document.querySelector('#root').innerHTML = \`
+  <h1>Hello Vite!</h1>
+  <a href="https://vitejs.dev/guide/features.html" target="_blank">Documentation</a>
+\` `},
                     { name: 'style.css', content: `body { font-family: sans-serif; }` },
                     { name: 'package.json', content: `{
   "name": "${projectName}",
@@ -502,7 +556,11 @@ const WorkspaceMode: React.FC<WorkspaceModeProps> = ({
   },
   "dependencies": {}
 }`},
-                    { name: 'vite.config.js', content: `import { defineConfig } from 'vite'\n\nexport default defineConfig({\n  plugins: [],\n})`}
+                    { name: 'vite.config.js', content: `import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [],
+})`}
                 ];
 
                 viteFiles.forEach(fileData => {
@@ -691,10 +749,65 @@ const WorkspaceMode: React.FC<WorkspaceModeProps> = ({
     return processedHtml.replace('<link rel="stylesheet" href="style.css">', `<style>${css}</style>`).replace('<script src="script.js"></script>', `<script>${js}</script>`);
   }, [files, currentDirectory]);
 
+  // Command palette component
+  const CommandPalette = () => {
+    if (!showCommandPalette) return null;
+    
+    const commands = [
+      { id: 'new-file', label: 'New File', action: () => { setNewItem({ parentId: 'root', type: 'file' }); setShowCommandPalette(false); } },
+      { id: 'new-folder', label: 'New Folder', action: () => { setNewItem({ parentId: 'root', type: 'folder' }); setShowCommandPalette(false); } },
+      { id: 'format-code', label: 'Format Code', action: () => { 
+        if (activeFileId && activeFile) {
+          // This will be handled by the keydown event
+          const event = new KeyboardEvent('keydown', { ctrlKey: true, shiftKey: true, key: 'f' });
+          document.dispatchEvent(event);
+        }
+        setShowCommandPalette(false); 
+      } },
+      { id: 'toggle-preview', label: 'Toggle Preview', action: () => { setIsPreviewOpen(!isPreviewOpen); setShowCommandPalette(false); } },
+      { id: 'toggle-terminal', label: 'Toggle Terminal', action: () => { setIsTerminalOpen(!isTerminalOpen); setShowCommandPalette(false); } },
+    ];
+    
+    return (
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[100] flex items-start justify-center pt-32" onClick={() => setShowCommandPalette(false)}>
+        <div className="w-full max-w-md bg-[#161b22] border border-[#30363d] rounded-lg shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="p-3 border-b border-[#30363d] flex items-center">
+            <Search className="w-4 h-4 text-[#8b949e] ml-2" />
+            <input
+              autoFocus
+              placeholder="Type a command..."
+              className="w-full bg-transparent border-none outline-none text-white ml-3 py-1 text-sm"
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setShowCommandPalette(false);
+                }
+              }}
+            />
+            <button onClick={() => setShowCommandPalette(false)} className="p-1 text-[#8b949e] hover:text-white">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {commands.map((cmd) => (
+              <button
+                key={cmd.id}
+                onClick={cmd.action}
+                className="w-full text-left px-4 py-2 text-sm text-[#c9d1d9] hover:bg-[#30363d] flex items-center"
+              >
+                <span className="ml-1">{cmd.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-[#0d1117] relative select-none">
+      {showCommandPalette && <CommandPalette />}
       <div className="flex-1 flex overflow-hidden">
-        <aside ref={sidebarRef} className={`${isSidebarOpen ? (isMobile ? 'fixed inset-0 w-full' : 'devforge-sidebar') : 'w-0'} bg-[#161b22] border-r border-[#30363d] flex flex-col overflow-hidden shrink-0 z-50`}>
+        <aside ref={sidebarRef} className={`${isSidebarOpen ? (isMobile ? 'fixed inset-0 w-full' : 'devforge-sidebar') : 'w-0'} bg-[#161b22] border-r border-[#30363d] flex flex-col overflow-hidden shrink-0 z-50 h-ful`}>
           <div className="p-4 border-b border-[#30363d] flex items-center justify-between bg-[#1c2128]">
             <span className="text-[10px] font-black uppercase tracking-widest text-[#8b949e]">{showSettings ? 'Settings' : 'Explorer'}</span>
             <div className="flex items-center space-x-2">
@@ -748,7 +861,7 @@ const WorkspaceMode: React.FC<WorkspaceModeProps> = ({
             onTouchStart={handleTouchStart}
             onKeyDown={handleResizerKeyDown}
             title="Drag to resize sidebar"
-            className="w-6 cursor-col-resize z-50 bg-transparent resizer-hover transition-colors flex items-center justify-center"
+            className="w-1 cursor-col-resize z-50 bg-transparent resizer-hover transition-colors flex items-center justify-center"
           >
             <div className="resizer-handle flex flex-col items-center justify-center pointer-events-none">
               <span className="block w-[2px] h-3 bg-[#484f58] rounded mb-1" />
@@ -757,27 +870,6 @@ const WorkspaceMode: React.FC<WorkspaceModeProps> = ({
             </div>
           </div>
         )} 
-        {/* Right resizer placed between main content and right panel */}
-        {!isMobile && (isPreviewOpen || isTerminalOpen) && (
-          <div
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize panel"
-            tabIndex={0}
-            onMouseDown={handleRightMouseDownResize}
-            onTouchStart={handleRightTouchStart}
-            onKeyDown={(e) => { if (e.key === 'ArrowLeft') setRightWidth(w => Math.max(200, w - 10)); if (e.key === 'ArrowRight') setRightWidth(w => Math.min(1000, w + 10)); }}
-            title="Drag to resize panel"
-            className="w-6 cursor-col-resize z-50 bg-transparent resizer-hover transition-colors flex items-center justify-center"
-          >
-            <div className="resizer-handle flex flex-col items-center justify-center pointer-events-none">
-              <span className="block w-[2px] h-3 bg-[#484f58] rounded mb-1" />
-              <span className="block w-[2px] h-3 bg-[#484f58] rounded mb-1" />
-              <span className="block w-[2px] h-3 bg-[#484f58] rounded" />
-            </div>
-          </div>
-        )}
-
 
         <main className="flex-1 flex flex-col min-w-0 bg-[#0d1117]">
           <div className="flex bg-[#161b22] border-b border-[#30363d] overflow-x-auto no-scrollbar items-center pr-4 shrink-0">
@@ -804,6 +896,27 @@ const WorkspaceMode: React.FC<WorkspaceModeProps> = ({
           </div>
         </main>
 
+        {/* Right resizer placed between main content and right panel */}
+        {!isMobile && (isPreviewOpen || isTerminalOpen) && (
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize panel"
+            tabIndex={0}
+            onMouseDown={handleRightMouseDownResize}
+            onTouchStart={handleRightTouchStart}
+            onKeyDown={(e) => { if (e.key === 'ArrowLeft') setRightWidth(w => Math.max(200, w - 10)); if (e.key === 'ArrowRight') setRightWidth(w => Math.min(1000, w + 10)); }}
+            title="Drag to resize panel"
+            className="w-1 cursor-col-resize z-50 bg-transparent resizer-hover transition-colors flex items-center justify-center"
+          >
+            <div className="resizer-handle flex flex-col items-center justify-center pointer-events-none">
+              <span className="block w-[2px] h-3 bg-[#484f58] rounded mb-1" />
+              <span className="block w-[2px] h-3 bg-[#484f58] rounded mb-1" />
+              <span className="block w-[2px] h-3 bg-[#484f58] rounded" />
+            </div>
+          </div>
+        )}
+
         <div className="flex shrink-0 h-full relative">
           {(isPreviewOpen || isTerminalOpen) && (
             <aside className={`${isTerminalMaximized ? 'fixed inset-0 w-full z-[100]' : (isMobile ? 'fixed inset-x-0 bottom-0 h-[60vh] w-full z-[60]' : 'devforge-right')} bg-[#161b22] border-l border-[#30363d] flex flex-col shadow-2xl transition-all duration-300 overflow-hidden min-h-0`}>
@@ -827,7 +940,7 @@ const WorkspaceMode: React.FC<WorkspaceModeProps> = ({
                       <button aria-label="Close terminal" title="Close terminal" onClick={() => { setIsTerminalOpen(false); setIsTerminalMaximized(false); }} className="p-1 text-[#8b949e] hover:text-white"><X className="w-4 h-4" /></button>
                     </div>
                   </div>
-                  <Terminal logs={terminalLogs} onCommand={handleCommand} onControlSignal={handleControlSignal} />
+                  <FakeTerminal logs={terminalLogs} onCommand={handleCommand} onControlSignal={handleControlSignal} image={env === 'nodejs' ? 'node' : env === 'python' ? 'python' : 'node'} onFileChange={onUpdateFile} />
                 </div>
               )}
             </aside>

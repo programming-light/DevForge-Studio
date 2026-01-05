@@ -168,7 +168,7 @@ const AcademyMode: React.FC<AcademyModeProps> = ({
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]" onClick={() => setIsSidebarOpen(false)} />
       )}
       
-      <aside className={`${isSidebarOpen ? (isMobile ? 'w-72 fixed inset-y-0 left-0 z-[70]' : 'w-80') : 'w-0'} bg-[#161b22] border-r border-[#30363d] flex flex-col transition-all duration-300 overflow-hidden shrink-0`}>
+      <aside className={`${isSidebarOpen ? (isMobile ? 'w-72 fixed inset-y-0 left-0 z-[70]' : 'w-80') : 'w-0'} bg-[#161b22] border-r border-[#30363d] flex flex-col transition-all duration-300 overflow-hidden shrink-0 h-[calc(100vh-4rem)]`}>
         <div className="p-6 border-b border-[#30363d] bg-[#1c2128] flex justify-between items-center shrink-0">
           <span className="text-[10px] font-black text-[#8b949e] uppercase tracking-[0.3em]">Module Index</span>
           {isMobile && <button onClick={() => setIsSidebarOpen(false)} className="p-1 text-[#8b949e] hover:text-white"><X className="w-5 h-5" /></button>}
@@ -186,7 +186,7 @@ const AcademyMode: React.FC<AcademyModeProps> = ({
             </button>
           ))}
         </div>
-        <div className="p-4 border-t border-[#30363d] bg-[#0d1117]">
+        <div className="p-4 border-t border-[#30363d] bg-[#0d1117] mt-auto">
           <button 
             onClick={() => setShowSolution(!showSolution)}
             className="w-full py-2 bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] rounded-lg text-[10px] font-black uppercase tracking-widest text-[#8b949e] hover:text-white transition-all flex items-center justify-center space-x-2"
@@ -218,8 +218,8 @@ const AcademyMode: React.FC<AcademyModeProps> = ({
         </header>
 
         <div className="flex-1 flex overflow-hidden relative">
-          <div className="flex-1 flex flex-col overflow-y-auto no-scrollbar bg-[#0d1117]">
-            <div className="p-6 md:p-14 border-b border-[#30363d] bg-gradient-to-b from-[#161b22] to-transparent shrink-0">
+          <div className="flex-1 flex flex-col overflow-y-auto no-scrollbar bg-[#0d1117] max-h-[calc(100vh-4rem)]">
+            <div className="p-6 md:p-14 border-b border-[#30363d] bg-gradient-to-b from-[#161b22] to-transparent shrink-0 max-h-[50vh] overflow-y-auto">
               {isValid && currentLesson.successMessage && (
                 <div className="mb-8 p-6 bg-green-500/10 border border-green-500/30 rounded-2xl animate-in fade-in slide-in-from-top-4">
                   <p className="text-green-200 font-bold">{currentLesson.successMessage}</p>
@@ -233,7 +233,7 @@ const AcademyMode: React.FC<AcademyModeProps> = ({
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>Suggested Implementation</span>
                   </div>
-                  <pre className="text-sm font-mono text-[#c9d1d9] bg-[#0d1117] p-4 rounded-xl border border-[#30363d] overflow-x-auto">
+                  <pre className="text-sm font-mono text-[#c9d1d9] bg-[#0d1117] p-4 rounded-xl border border-[#30363d] overflow-x-auto max-h-60 overflow-y-auto">
                     {currentLesson.solution}
                   </pre>
                 </div>

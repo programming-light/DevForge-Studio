@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { AppMode, Lesson, Subject, FileNode } from './types';
 import { INITIAL_LESSONS, INITIAL_WORKSPACE, INITIAL_SUBJECTS } from './constants';
 import Navbar from './components/Navbar';
+import { getKV, setKV } from './src/storage/indexeddb';
 import AcademyMode from './components/AcademyMode';
 import WorkspaceMode from './components/WorkspaceMode';
 import AdminPortal from './components/AdminPortal';
@@ -43,6 +44,31 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : INITIAL_WORKSPACE;
   });
 
+  // Load from IndexedDB if available (overrides localStorage for offline-first persistence)
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getKV<FileNode[]>('workspace_files');
+        if (data && Array.isArray(data) && data.length) {
+          setWorkspaceFiles(data);
+        }
+      } catch (e) {
+        // ignore
+      }
+    })();
+  }, []);
+
+  // Persist to IndexedDB when files change
+  useEffect(() => {
+    (async () => {
+      try {
+        await setKV('workspace_files', workspaceFiles);
+      } catch (e) {
+        // ignore
+      }
+    })();
+  }, [workspaceFiles]);
+
   const [activeSubjectId, setActiveSubjectId] = useState<string | null>(() => {
     return localStorage.getItem('master_ide_active_subject');
   });
@@ -70,6 +96,20 @@ const App: React.FC = () => {
   useEffect(() => localStorage.setItem('master_ide_lessons', JSON.stringify(lessons)), [lessons]);
   useEffect(() => localStorage.setItem('master_ide_files', JSON.stringify(workspaceFiles)), [workspaceFiles]);
   useEffect(() => localStorage.setItem('master_ide_autosave_interval', autoSaveInterval.toString()), [autoSaveInterval]);
+
+  // Search handler used by Navbar search box — finds first file name/content match and opens it
+  const handleSearch = (query: string) => {
+    const q = query.trim().toLowerCase();
+    if (!q) return;
+    const found = workspaceFiles.find(f => (f.name && f.name.toLowerCase().includes(q)) || (f.content && f.content.toLowerCase().includes(q)));
+    if (found) {
+      setMode(AppMode.WORKSPACE);
+      setActiveFileId(found.id);
+      setOpenFiles(prev => prev.includes(found.id) ? prev : [...prev, found.id]);
+    } else {
+      alert('No matching files found');
+    }
+  };
   
   useEffect(() => {
     if (activeSubjectId) localStorage.setItem('master_ide_active_subject', activeSubjectId);
@@ -228,6 +268,7 @@ const App: React.FC = () => {
         activeSubjectId={activeSubjectId}
         onClearSubject={() => setActiveSubjectId(null)}
         onDownload={handleDownloadProject}
+        onSearch={handleSearch}
       />
 
       <div className="flex-1 flex overflow-hidden">
@@ -252,20 +293,22 @@ const App: React.FC = () => {
             />
           )
         ) : (
-          <WorkspaceMode 
-            files={workspaceFiles} 
-            activeFileId={activeFileId} 
-            setActiveFileId={setActiveFileId}
-            openFiles={openFiles}
-            setOpenFiles={setOpenFiles}
-            onUpdateFile={handleUpdateFile}
-            onRenameFile={handleRenameFile}
-            onCreateFile={handleCreateFile}
-            onDeleteFile={handleDeleteFile}
-            onToggleFolder={handleToggleFolder}
-            autoSaveInterval={autoSaveInterval}
-            setAutoSaveInterval={setAutoSaveInterval}
-          />
+          <div className="flex flex-col flex-1 overflow-hidden">
+            <WorkspaceMode 
+              files={workspaceFiles} 
+              activeFileId={activeFileId} 
+              setActiveFileId={setActiveFileId}
+              openFiles={openFiles}
+              setOpenFiles={setOpenFiles}
+              onUpdateFile={handleUpdateFile}
+              onRenameFile={handleRenameFile}
+              onCreateFile={handleCreateFile}
+              onDeleteFile={handleDeleteFile}
+              onToggleFolder={handleToggleFolder}
+              autoSaveInterval={autoSaveInterval}
+              setAutoSaveInterval={setAutoSaveInterval}
+            />
+          </div>
         )}
       </div>
 

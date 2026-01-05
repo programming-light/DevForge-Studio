@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --devforge-sidebar-width: 16rem; /* default */
 }

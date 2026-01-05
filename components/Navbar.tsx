@@ -4,7 +4,7 @@ import { AppMode } from '../types';
 import { 
   BookOpen, Code2, ShieldCheck, LogOut, Github, Sparkles, 
   Users, Youtube, Facebook, 
-  MessageSquare, Send, ChevronDown, Download, User
+  MessageSquare, Send, ChevronDown, Download, User, Search
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -16,10 +16,11 @@ interface NavbarProps {
   activeSubjectId: string | null;
   onClearSubject: () => void;
   onDownload: () => void;
+  onSearch?: (query: string) => void;
 }
 
 const Navbar: React.FC<NavbarProps> = ({ 
-  mode, setMode, isAdmin, openAdminLogin, onLogout, activeSubjectId, onClearSubject, onDownload
+  mode, setMode, isAdmin, openAdminLogin, onLogout, activeSubjectId, onClearSubject, onDownload, onSearch
 }) => {
   const [showSocials, setShowSocials] = useState(false);
 
@@ -72,6 +73,10 @@ const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       <div className="flex items-center space-x-2 md:space-x-4">
+        <div className="hidden sm:flex items-center bg-[#0d1117] border border-[#30363d] rounded px-2 py-1">
+          <Search className="w-4 h-4 text-[#8b949e] mr-2" />
+          <input placeholder="Search files & code (Enter)" onKeyDown={(e) => { if (e.key === 'Enter') { const v = (e.target as HTMLInputElement).value.trim(); if (v && typeof onSearch === 'function') onSearch(v); } }} className="bg-transparent text-sm text-[#c9d1d9] outline-none placeholder-[#6e7580]" />
+        </div>
         {mode === AppMode.WORKSPACE && (
           <button 
             onClick={onDownload}

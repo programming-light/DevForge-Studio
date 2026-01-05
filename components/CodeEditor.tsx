@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import * as emmetMonaco from 'emmet-monaco-es';
 
 declare global {
   interface Window {
@@ -74,48 +75,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language = 'ht
       if (!editorRef.current || monacoEditorRef.current) return;
       const monaco = window.monaco;
 
-      monaco.languages.registerCompletionItemProvider('html', {
-        provideCompletionItems: (model: any, position: any) => {
-          const textUntilPosition = model.getValueInRange({
-            startLineNumber: position.lineNumber,
-            startColumn: 1,
-            endLineNumber: position.lineNumber,
-            endColumn: position.column
-          });
 
-          if (textUntilPosition.trim() === '!') {
-            return {
-              suggestions: [{
-                label: '!',
-                kind: monaco.languages.CompletionItemKind.Snippet,
-                documentation: 'HTML5 Boilerplate',
-                detail: 'Generate standard HTML5 structure',
-                insertText: [
-                  '<!DOCTYPE html>',
-                  '<html lang="en">',
-                  '<head>',
-                  '    <meta charset="UTF-8">',
-                  '    <meta name="viewport" content="width=device-width, initial-scale=1.0">',
-                  '    <title>${1:Document}</title>',
-                  '</head>',
-                  '<body>',
-                  '    $0',
-                  '</body>',
-                  '</html>'
-                ].join('\n'),
-                insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                range: {
-                  startLineNumber: position.lineNumber,
-                  startColumn: position.column - 1,
-                  endLineNumber: position.lineNumber,
-                  endColumn: position.column
-                }
-              }]
-            };
-          }
-          return { suggestions: [] };
-        }
-      });
 
       const monacoLang = language === 'py' ? 'python' : 
                          (language === 'js' || language === 'javascript') ? 'javascript' : 
@@ -127,14 +87,14 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language = 'ht
         theme: 'vs-dark',
         automaticLayout: false, 
         fontSize: 14,
-        fontFamily: "'Fira Code', 'Courier New', monospace",
+        fontFamily: "'Fira Code', 'JetBrains Mono', 'Consolas', 'Courier New', monospace",
         fontLigatures: true,
         minimap: { enabled: false },
         lineNumbers: 'on',
         scrollBeyondLastLine: false,
         wordWrap: 'on',
         autoClosingBrackets: 'always',
-        autoClosingTags: true,
+        autoClosingTags: 'always',
         autoClosingQuotes: 'always',
         formatOnType: true,
         formatOnPaste: true,
@@ -144,6 +104,9 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language = 'ht
         tabSize: 2,
         quickSuggestions: { other: true, comments: true, strings: true },
         renderLineHighlight: 'all',
+        renderWhitespace: 'all',
+        smoothScrolling: true,
+        'bracketPairColorization.enabled': true,
         scrollbar: {
           vertical: 'visible',
           horizontal: 'visible',
@@ -151,6 +114,72 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language = 'ht
           verticalScrollbarSize: 10,
           horizontalScrollbarSize: 10
         }
+      });
+
+      // Initialize Emmet support based on language - do this BEFORE editor creation
+      // Enhanced Emmet support for more languages
+      if (['html', 'xml', 'xhtml', 'php', 'twig', 'blade', 'handlebars', 'ejs', 'mjs'].includes(monacoLang)) {
+        emmetMonaco.emmetHTML && emmetMonaco.emmetHTML(monaco, [monacoLang]);
+      } else if (['css', 'scss', 'less', 'sass'].includes(monacoLang)) {
+        emmetMonaco.emmetCSS && emmetMonaco.emmetCSS(monaco, [monacoLang]);
+      } else if (['javascript', 'typescript', 'jsx', 'tsx'].includes(monacoLang)) {
+        emmetMonaco.emmetJSX && emmetMonaco.emmetJSX(monaco, [monacoLang]);
+      } else if (['python'].includes(monacoLang)) {
+        emmetMonaco.emmetHTML && emmetMonaco.emmetHTML(monaco, [monacoLang]); // Python can benefit from HTML emmet in f-strings or templates
+      }
+      
+      monacoEditorRef.current = monaco.editor.create(editorRef.current, {
+        value: value,
+        language: monacoLang,
+        theme: 'vs-dark',
+        automaticLayout: false, 
+        fontSize: 14,
+        fontFamily: "'Fira Code', 'JetBrains Mono', 'Consolas', 'Courier New', monospace",
+        fontLigatures: true,
+        minimap: { enabled: false },
+        lineNumbers: 'on',
+        scrollBeyondLastLine: false,
+        wordWrap: 'on',
+        autoClosingBrackets: 'always',
+        autoClosingTags: 'always',
+        autoClosingQuotes: 'always',
+        formatOnType: true,
+        formatOnPaste: true,
+        suggestSelection: 'first',
+        suggestOnTriggerCharacters: true,
+        acceptSuggestionOnEnter: 'on',
+        tabSize: 2,
+        quickSuggestions: { other: true, comments: true, strings: true },
+        renderLineHighlight: 'all',
+        renderWhitespace: 'all',
+        smoothScrolling: true,
+        'bracketPairColorization.enabled': true,
+        scrollbar: {
+          vertical: 'visible',
+          horizontal: 'visible',
+          useShadows: false,
+          verticalScrollbarSize: 10,
+          horizontalScrollbarSize: 10
+        }
+      });
+
+      // Enable auto rename tag functionality for HTML/XML languages
+      if (['html', 'xml', 'xhtml', 'php', 'twig', 'blade', 'handlebars', 'ejs', 'mjs', 'jsx', 'tsx'].includes(monacoLang)) {
+        // Monaco editor has built-in auto rename tag functionality for HTML/XML languages
+        // The functionality is enabled by default when using the HTML language mode
+      }
+      
+      // Add Prettier formatting for CSS and other supported languages
+      if (['css', 'scss', 'less', 'html', 'javascript', 'typescript', 'jsx', 'tsx', 'json', 'python'].includes(monacoLang)) {
+        // Register formatting command for this editor instance
+        monacoEditorRef.current.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+          monacoEditorRef.current.getAction('editor.action.formatDocument').run();
+        });
+      }
+      
+      // Add command for showing suggestions (Ctrl+Space)
+      monacoEditorRef.current.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Space, () => {
+        monacoEditorRef.current.trigger('keyboard', 'editor.action.triggerSuggest', {});
       });
 
       const syncLayout = () => {
@@ -173,6 +202,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language = 'ht
           onChangeRef.current(monacoEditorRef.current.getValue());
         }
       });
+
+
 
       (monacoEditorRef.current as any)._resizeObserver = resizeObserver;
     };

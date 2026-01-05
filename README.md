@@ -52,7 +52,8 @@ Open the IDE and open the terminal — it will connect to `/ws/pty` on the same 
 Notes:
 
 - By default `node_modules` is hidden in the explorer to avoid slowing down the UI; toggle visibility using the package icon in the Explorer header.
-- The server will attempt to install `python3` and `python3-pip` inside the container at startup for convenience. This may take a few seconds the first time you spawn a container.
+- The server will attempt to install `python3` and `python3-pip` inside the container at startup for convenience, and for Node images it will try to enable `corepack` and install `pnpm`/`yarn` if missing. This may take a few seconds the first time you spawn a container.
+- Use the `tools` command in the terminal (or it runs automatically on connect) to list detected versions of `node`, `npm`, `npx`, `pnpm`, `yarn`, `python`, and `pip` from the server session.
 - The backend exposes session management endpoints for diagnostics:
   - `GET /sessions` — lists current container sessions (id, image, createdAt, lastActivity)
   - `POST /sessions/:id/kill` — force-kills a session container
