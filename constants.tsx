@@ -184,8 +184,10 @@ export const INITIAL_LESSONS: Lesson[] = generateLessons();
 
 export const INITIAL_WORKSPACE: FileNode[] = [
   { id: 'root', name: 'project', type: 'folder', parentId: null, isOpen: true },
-  { id: 'index-html', name: 'index.html', type: 'file', content: '<!DOCTYPE html>\n<html>\n<head>\n  <link rel="stylesheet" href="style.css">\n</head>\n<body>\n  <h1>DevForge Lab</h1>\n  <p>Your engineering sandbox is active.</p>\n</body>\n</html>', parentId: 'root' },
+  { id: 'index-html', name: 'index.html', type: 'file', content: '<!DOCTYPE html>\n<html>\n<head>\n  <link rel="stylesheet" href="style.css">\n</head>\n<body>\n  <h1>DevForge Lab</h1>\n  <p>Your engineering sandbox is active.</p>\n  <script src="script.js"></script>\n</body>\n</html>', parentId: 'root' },
   { id: 'style-css', name: 'style.css', type: 'file', content: 'body { background: #0d1117; color: white; display: flex; flex-direction: column; align-items: center; padding-top: 100px; font-family: sans-serif; }', parentId: 'root' },
+  { id: 'script-js', name: 'script.js', type: 'file', content: 'console.log("Hello from script.js!");', parentId: 'root' },
+  { id: 'package-json', name: 'package.json', type: 'file', content: '{\n  "name": "devforge-project",\n  "version": "1.0.0",\n  "dependencies": {}\n}', parentId: 'root' },
 ];
 
 export const ADMIN_CREDENTIALS = {

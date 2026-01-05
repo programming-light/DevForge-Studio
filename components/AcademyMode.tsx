@@ -116,21 +116,48 @@ const AcademyMode: React.FC<AcademyModeProps> = ({
     }
   }, [code, currentLesson, onUpdateLesson, isHTMLSubject, subjectId]);
 
+  const addLog = (content: string, type: 'log' | 'error' | 'info' = 'log') => {
+    setLogs(prev => [...prev, { content, type, timestamp: new Date() }]);
+  };
+
   const handleRunCode = async () => {
     setLogs([]);
     if (!isTerminalOpen) setIsTerminalOpen(true);
+
     if (subjectId === 'js') {
-      try { 
-        new Function(code)(); 
-        setLogs([{content: '✓ Script executed successfully.', type: 'info', timestamp: new Date()}]); 
-      } 
-      catch (err: any) { setLogs([{content: err.message, type: 'error', timestamp: new Date()}]); }
+      const oldLog = console.log;
+      console.log = (...args: any[]) => {
+        const message = args.map(arg => {
+          try {
+            if (typeof arg === 'object' && arg !== null) {
+              return JSON.stringify(arg);
+            }
+            return String(arg);
+          } catch (e) {
+            return 'Unserializable object';
+          }
+        }).join(' ');
+        addLog(message);
+      };
+
+      try {
+        new Function(code)();
+        addLog('✓ Script executed successfully.', 'info');
+      } catch (err: any) {
+        addLog(err.message, 'error');
+      } finally {
+        console.log = oldLog;
+      }
     } else if (subjectId === 'py') {
-      try { 
-        const result = await runPython(code); 
-        if (result) setLogs([{content: String(result), type: 'log', timestamp: new Date()}]); 
-      } 
-      catch (err: any) { setLogs([{content: err.message, type: 'error', timestamp: new Date()}]); }
+      try {
+        const result = await runPython(code);
+        if (result) {
+          String(result).split('\n').forEach(line => addLog(line));
+        }
+        addLog('✓ Script executed successfully.', 'info');
+      } catch (err: any) {
+        addLog(err.message, 'error');
+      }
     }
   };
 

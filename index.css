@@ -1,0 +1,30 @@
+:root {
+  --devforge-sidebar-width: 16rem; /* default */
+}
+
+.devforge-sidebar {
+  width: var(--devforge-sidebar-width);
+  min-width: 0;
+  transition: width 300ms ease;
+}
+
+.devforge-right {
+  width: var(--devforge-right-width);
+  min-width: 0;
+  transition: width 300ms ease;
+}
+
+/* Visual hint for the resizer when hovered */
+.resizer-hover:hover {
+  background-color: #30363d;
+}
+
+/* Visible handle inside resizer */
+.resizer-handle span {
+  display: block;
+}
+
+/* Slightly larger hit target on hover */
+.w-6.cursor-col-resize:hover {
+  background-color: rgba(48,54,61,0.06);
+}

@@ -1,181 +1,227 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { TerminalLog } from '../types';
+// Load the emulator robustly — some bundlers export it as default, other times as named
+// @ts-ignore - no types bundled for this lib sometimes
+import * as RCE from 'react-console-emulator';
+const ConsoleComp: any = (RCE as any).default ?? (RCE as any).Console;
 
 interface TerminalProps {
-  logs: TerminalLog[];
-  onCommand?: (cmd: string) => void;
-  interactive?: {
-    type: 'select' | 'input';
-    options?: string[];
-    selectedIndex?: number;
-    onSelect?: (index: number) => void;
-  } | null;
+  logs?: TerminalLog[]; // If provided, run in "fake" / host-integrated mode (Workspace)
+  onCommand?: (cmd: string) => void; // Handler for commands when running in integrated mode
+  onControlSignal?: (signal: string) => void; // Ctrl+C, Escape, etc.
+  image?: string; // optional image key (node, python, ubuntu) for container sessions
 }
 
-const Terminal: React.FC<TerminalProps> = ({ logs, onCommand, interactive }) => {
+const useWebSocketTerminal = (enabled: boolean, image?: string) => {
+  const wsRef = useRef<WebSocket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [terminalOutput, setTerminalOutput] = useState<TerminalLog[]>([]);
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const host = window.location.host; // use same-origin host and port
+    const q = image ? `?image=${encodeURIComponent(image)}` : '';
+    const newWs = new WebSocket(`${proto}://${host}/ws/pty${q}`); // Connect to container PTY endpoint on same port
+
+    newWs.onopen = () => {
+      wsRef.current = newWs;
+      setIsConnected(true);
+      setError(null);
+      setTerminalOutput(prev => [...prev, { type: 'info', content: 'Connected to terminal server.', timestamp: new Date() }]);
+      // send an initial resize hint (cols/rows) to container PTY
+      try { newWs.send(JSON.stringify({ type: 'resize', cols: 120, rows: 30 })); } catch (e) {}
+    };
+
+    newWs.onmessage = event => {
+      const content = event.data;
+      setTerminalOutput(prev => [...prev, { type: 'log', content: content, timestamp: new Date() }]);
+    };
+
+    newWs.onerror = err => {
+      setError('WebSocket connection error.');
+      setTerminalOutput(prev => [...prev, { type: 'error', content: `WebSocket error: ${err?.message || String(err)}`, timestamp: new Date() }]);
+      setIsConnected(false);
+    };
+
+    newWs.onclose = () => {
+      wsRef.current = null;
+      setIsConnected(false);
+      setTerminalOutput(prev => [...prev, { type: 'info', content: 'Disconnected from terminal server.', timestamp: new Date() }]);
+    };
+
+    wsRef.current = newWs;
+
+    return () => {
+      try { newWs.close(); } catch (e) {}
+    };
+  }, [enabled, image]);
+
+  const sendCommand = useCallback((command: string) => {
+    if (!enabled) {
+      setTerminalOutput(prev => [...prev, { type: 'error', content: 'WebSocket not enabled for this terminal.', timestamp: new Date() }]);
+      return;
+    }
+    if (wsRef.current && isConnected) {
+      wsRef.current.send(command);
+      setTerminalOutput(prev => [...prev, { type: 'info', content: `$ ${command}`, timestamp: new Date() }]);
+    } else {
+      setTerminalOutput(prev => [...prev, { type: 'error', content: 'Not connected to terminal server.', timestamp: new Date() }]);
+    }
+  }, [isConnected, enabled]);
+
+  const sendSignal = useCallback((signal: string) => {
+    try {
+      if (wsRef.current && isConnected) wsRef.current.send(JSON.stringify({ type: 'signal', signal }));
+    } catch (e) {
+      setTerminalOutput(prev => [...prev, { type: 'error', content: `Failed to send signal: ${String(e)}`, timestamp: new Date() }]);
+    }
+  }, [isConnected]);
+
+  return { terminalOutput, sendCommand, sendSignal, isConnected, error };
+};
+
+const Terminal: React.FC<TerminalProps> = ({ logs = [], onCommand, onControlSignal, image }) => {
   const endRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [command, setCommand] = useState('');
-  const [history, setHistory] = useState<string[]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
+
+  // If onCommand is provided, operate in "integrated" fake mode (Workspace). Otherwise, use WebSocket.
+  const isIntegrated = typeof onCommand === 'function';
+  const { terminalOutput: wsOutput, sendCommand: sendToWs, sendSignal, isConnected, error: wsError } = useWebSocketTerminal(!isIntegrated, image);
+
+  const displayLogs = logs.length ? logs : wsOutput;
+
+  // small connected-image banner when connected to a container image
+  const ConnectedBanner = () => (
+    isConnected && image ? <div className="px-3 py-1 text-[11px] text-[#8b949e] bg-[#081017] border-b border-[#20303a]">Connected to container image: <span className="text-white ml-1">{image}</span></div> : null
+  );
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [logs, interactive]);
+  }, [displayLogs]);
 
+  // Capture Ctrl+C and Escape to send control signals when using the WS-backed terminal
   useEffect(() => {
-    inputRef.current?.focus();
-  }, [interactive]);
+    const handler = (e: KeyboardEvent) => {
+      // only when NOT using integrated fake mode
+      if (isIntegrated) return;
+      if ((e.ctrlKey && e.key === 'c') || e.key === 'Escape') {
+        e.preventDefault();
+        // Try to send signal over WebSocket first
+        if (sendSignal) sendSignal('SIGINT');
+        // Also call optional callback
+        onControlSignal && onControlSignal('SIGINT');
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isIntegrated, onControlSignal, sendSignal]);
 
-  const handleTerminalClick = () => {
-    inputRef.current?.focus();
-  };
+  const run = useCallback((rawCmd: string) => {
+    const trimmed = rawCmd.trim();
+    if (!trimmed) return 'No command entered';
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (interactive && interactive.type === 'select') return;
-
-    const trimmed = command.trim();
-    if (trimmed && onCommand) {
+    if (isIntegrated && onCommand) {
       onCommand(trimmed);
-      setHistory(prev => [trimmed, ...prev].slice(0, 50));
-      setHistoryIndex(-1);
-      setCommand('');
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (interactive && interactive.type === 'select') {
-      const optionsCount = interactive.options?.length || 0;
-      const currentIndex = interactive.selectedIndex || 0;
-
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        const nextIndex = (currentIndex - 1 + optionsCount) % optionsCount;
-        interactive.onSelect?.(nextIndex);
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        const nextIndex = (currentIndex + 1) % optionsCount;
-        interactive.onSelect?.(nextIndex);
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        const selection = interactive.options?.[currentIndex] || '';
-        onCommand?.(selection);
-      }
-      return;
+      // Output is appended to the logs in parent; show a hint here
+      return '';
     }
 
-    if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      const nextIndex = historyIndex + 1;
-      if (nextIndex < history.length) {
-        setHistoryIndex(nextIndex);
-        setCommand(history[nextIndex]);
+    // WebSocket fallback
+    sendToWs(trimmed);
+    return '';
+  }, [isIntegrated, onCommand, sendToWs]);
+
+  const makeCmd = useCallback((name: string, usage: string, help: string) => {
+    return {
+      description: help,
+      usage,
+      fn: (...args: any[]) => {
+        const cmd = [name, ...args].join(' ').trim();
+        return run(cmd);
       }
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      const nextIndex = historyIndex - 1;
-      if (nextIndex >= 0) {
-        setHistoryIndex(nextIndex);
-        setCommand(history[nextIndex]);
-      } else {
-        setHistoryIndex(-1);
-        setCommand('');
+    };
+  }, [run]);
+
+  const commands = useMemo(() => ({
+    clear: makeCmd('clear', 'clear', 'Clear the terminal output'),
+    ls: makeCmd('ls', 'ls', 'List files in the current directory'),
+    pwd: makeCmd('pwd', 'pwd', 'Print working directory'),
+    mkdir: makeCmd('mkdir', 'mkdir <name>', 'Create a new folder'),
+    touch: makeCmd('touch', 'touch <name>', 'Create a new file'),
+    cd: makeCmd('cd', 'cd <path>', 'Change directory'),
+    cat: makeCmd('cat', 'cat <file>', 'Print file contents'),
+    node: makeCmd('node', 'node <file.js>', 'Run JavaScript file (simulated in workspace)'),
+    npm: {
+      description: 'npm commands (simulated)',
+      usage: 'npm <subcommand> ...',
+      fn: (...args: any[]) => {
+        const cmd = ['npm', ...args].join(' ');
+        return run(cmd);
       }
+    },
+    python: makeCmd('python', 'python <script.py>', 'Run python script (Pyodide if available)'),
+    pip: {
+      description: 'pip commands (simulated)',
+      usage: 'pip install <pkg>',
+      fn: (...args: any[]) => run(['pip', ...args].join(' ')),
+    },
+    help: {
+      description: 'Show help',
+      usage: 'help',
+      fn: () => 'Supported commands: clear, ls, pwd, mkdir, touch, cd, cat, node, npm, python, pip'
     }
-  };
+  }), [makeCmd, run]);
 
   return (
-    <div 
-      className="flex-1 flex flex-col bg-[#0d1117] overflow-hidden cursor-text select-text"
-      onClick={handleTerminalClick}
-    >
-      <div className="flex-1 p-4 overflow-y-auto font-mono text-xs leading-relaxed space-y-1 custom-scrollbar">
-        {logs.map((log, i) => (
+    <div className="flex-1 flex flex-col bg-[#0d1117] overflow-hidden cursor-text select-text">
+      <div className="flex-1 flex flex-col">
+        <ConnectedBanner />
+        <div className="flex-1 p-4 overflow-y-auto font-mono text-xs leading-relaxed space-y-1 custom-scrollbar">
+          {!isIntegrated && !isConnected && <div className="text-[#f85149]">Connecting to terminal server...</div>}
+          {wsError && <div className="text-[#f85149]">WebSocket Error: {wsError}</div>}
+
+          {displayLogs.map((log, i) => (
           <div key={i} className="flex group">
             <span className="text-[#484f58] shrink-0 mr-3 select-none opacity-40">[{log.timestamp.toLocaleTimeString([], { hour12: false })}]</span>
             <span className={`${
-              log.type === 'error' ? 'text-[#f85149]' : 
+              log.type === 'error' ? 'text-[#f85149]' :
               log.type === 'info' ? 'text-[#58a6ff]' : 'text-[#e6edf3]'
             } break-all whitespace-pre-wrap flex-1`}>
               {log.content}
             </span>
           </div>
         ))}
-
-        {interactive && interactive.type === 'select' && (
-          <div className="mt-2 ml-10 space-y-1 animate-in fade-in slide-in-from-left-2 duration-200">
-            {interactive.options?.map((opt, idx) => (
-              <div 
-                key={opt} 
-                className={`flex items-center space-x-3 cursor-pointer group/opt ${idx === interactive.selectedIndex ? 'text-[#58a6ff]' : 'text-[#8b949e]'}`}
-                onClick={() => {
-                  interactive.onSelect?.(idx);
-                  onCommand?.(opt);
-                }}
-              >
-                <span className="w-4 flex justify-center">
-                  {idx === interactive.selectedIndex ? (
-                    <span className="text-[#58a6ff] font-bold animate-pulse">❯</span>
-                  ) : (
-                    <span className="text-[#30363d] opacity-0 group-hover/opt:opacity-100 transition-opacity">○</span>
-                  )}
-                </span>
-                <span className={`${idx === interactive.selectedIndex ? 'font-bold text-[#e6edf3]' : ''}`}>
-                  {opt}
-                </span>
-              </div>
-            ))}
-            <div className="text-[10px] text-[#484f58] mt-6 flex items-center space-x-3 border-t border-[#30363d] pt-4 select-none">
-              <div className="flex items-center space-x-1">
-                <span className="px-1.5 py-0.5 border border-[#30363d] rounded bg-[#161b22]">↑↓</span>
-                <span>to navigate</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <span className="px-1.5 py-0.5 border border-[#30363d] rounded bg-[#161b22]">Enter</span>
-                <span>to confirm</span>
-              </div>
-            </div>
-          </div>
-        )}
-
         <div ref={endRef} />
       </div>
-      
-      <form onSubmit={handleSubmit} className="px-4 py-3 border-t border-[#30363d] bg-[#161b22] flex items-center">
-        <div className="flex items-center shrink-0 select-none mr-2">
-          {interactive?.type === 'input' ? (
-            <span className="text-[#58a6ff] font-bold text-xs animate-pulse w-4 text-center">?</span>
+
+      <div className="border-t border-[#30363d] bg-[#161b22] p-2 flex flex-col min-h-0">
+        <div className="flex-1 min-h-0">
+          {ConsoleComp ? (
+            <ConsoleComp
+              commands={commands}
+              welcomeMessage={false}
+              promptLabel={"sh>"}
+              noAutoScroll={false}
+              noDefaults={true}
+              autofocus={true}
+              style={{ height: '100%', background: 'transparent', border: 'none', fontFamily: "'Fira Code', monospace", overflow: 'auto' }}
+            />
           ) : (
-            <div className="flex items-center space-x-1 w-8">
-              <span className="text-[#3fb950] font-bold text-xs">➜</span>
-              <span className="text-[#58a6ff] font-bold text-xs">~</span>
+            <div className="p-2">
+              <div className="text-yellow-400">Terminal UI not available (react-console-emulator missing).</div>
+              <div className="mt-2 flex">
+                <input className="flex-1 bg-[#0b0f13] border border-[#30363d] rounded px-2 py-1 text-xs text-white" placeholder="Type a command and press Enter" onKeyDown={(e) => { if (e.key === 'Enter') { run((e.target as HTMLInputElement).value); (e.target as HTMLInputElement).value = ''; } }} />
+              </div>
             </div>
           )}
         </div>
-        <input 
-          ref={inputRef}
-          type="text"
-          autoFocus
-          autoComplete="off"
-          spellCheck="false"
-          autoCorrect="off"
-          className="flex-1 bg-transparent border-none outline-none text-[#e6edf3] text-xs m-0 p-0 block leading-normal"
-          style={{ 
-            fontFamily: "'Fira Code', 'Fira Mono', 'DejaVu Sans Mono', monospace",
-            boxSizing: 'border-box',
-            fontVariantLigatures: 'none',
-            letterSpacing: '0px'
-          }}
-          placeholder={interactive ? "" : "Type 'clear' to clear output..."}
-          value={command}
-          onChange={e => setCommand(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
-      </form>
+      </div>
     </div>
   );
 };
 
 export default Terminal;
+

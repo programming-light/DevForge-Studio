@@ -35,8 +35,9 @@ const Navbar: React.FC<NavbarProps> = ({
     <nav className="h-14 border-b border-[#30363d] bg-[#161b22] flex items-center justify-between px-3 md:px-6 shrink-0 z-50">
       <div className="flex items-center space-x-2 md:space-x-6">
         <div className="flex items-center space-x-2 md:space-x-3 group cursor-pointer" onClick={() => { setMode(AppMode.ACADEMY); onClearSubject(); }}>
-          <div className="p-1.5 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg shadow-lg group-hover:scale-110 transition-transform shrink-0">
-            <Code2 className="w-4 h-4 md:w-5 md:h-5 text-white" />
+          <div className="p-1.5 bg-black rounded-lg shadow-lg group-hover:scale-110 transition-transform shrink-0">
+            {/* <Code2 className="w-5 h-5 md:w-6 md:h-6 text-white" /> */}
+            <img src="/image.png"  className="drop-shadow-lg drop-shadow-white w-5 h-5 md:w-7 md:h-7"alt="" />
           </div>
           <div className="hidden xs:flex flex-col">
             <span className="font-black text-[11px] md:text-sm tracking-tighter text-white leading-none uppercase">DevForge</span>

@@ -9,10 +9,22 @@ import Dashboard from './components/Dashboard';
 import JSZip from 'jszip';
 
 const App: React.FC = () => {
+  // Sync initial state from URL (basic routing) or localStorage
   const [mode, setMode] = useState<AppMode>(() => {
+    try {
+      const path = window.location.pathname.replace(/\/+$/, '');
+      const parts = path.split('/').filter(Boolean);
+      if (parts[0] === 'workspace') return AppMode.WORKSPACE;
+      if (parts[0] === 'academy') return AppMode.ACADEMY;
+    } catch (e) {
+      // ignore
+    }
+
     const saved = localStorage.getItem('master_ide_mode');
     return saved ? (JSON.parse(saved) as AppMode) : AppMode.ACADEMY;
   });
+
+
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   
@@ -71,6 +83,65 @@ const App: React.FC = () => {
     if (activeFileId) localStorage.setItem('master_ide_active_file', activeFileId);
   }, [activeFileId]);
   useEffect(() => localStorage.setItem('master_ide_open_files', JSON.stringify(openFiles)), [openFiles]);
+
+  // Keep URL in sync with selected mode and active items
+  useEffect(() => {
+    const makePath = () => {
+      if (mode === AppMode.WORKSPACE) {
+        if (activeFileId) return `/workspace/file/${activeFileId}`;
+        return '/workspace';
+      }
+      if (mode === AppMode.ACADEMY) {
+        if (activeSubjectId && activeLessonId) return `/academy/subject/${activeSubjectId}/lesson/${activeLessonId}`;
+        if (activeSubjectId) return `/academy/subject/${activeSubjectId}`;
+        return '/academy';
+      }
+      return '/';
+    };
+    const path = makePath();
+    if (window.location.pathname !== path) {
+      window.history.pushState({}, '', path);
+    }
+  }, [mode, activeSubjectId, activeLessonId, activeFileId]);
+
+  // Handle back/forward navigation
+  useEffect(() => {
+    const onPop = () => {
+      const parts = window.location.pathname.replace(/\/+$/, '').split('/').filter(Boolean);
+      if (parts[0] === 'workspace') {
+        setMode(AppMode.WORKSPACE);
+        if (parts[1] === 'file' && parts[2]) setActiveFileId(parts[2]);
+      } else if (parts[0] === 'academy') {
+        setMode(AppMode.ACADEMY);
+        if (parts[1] === 'subject' && parts[2]) setActiveSubjectId(parts[2]);
+        if (parts[3] === 'lesson' && parts[4]) setActiveLessonId(parts[4]);
+      }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  // If the app loads with a path, apply it to state (initial sync)
+  useEffect(() => {
+    const parts = window.location.pathname.replace(/\/+$/, '').split('/').filter(Boolean);
+    if (parts[0] === 'workspace') {
+      setMode(AppMode.WORKSPACE);
+      if (parts[1] === 'file' && parts[2]) setActiveFileId(parts[2]);
+    } else if (parts[0] === 'academy') {
+      setMode(AppMode.ACADEMY);
+      if (parts[1] === 'subject' && parts[2]) setActiveSubjectId(parts[2]);
+      if (parts[3] === 'lesson' && parts[4]) setActiveLessonId(parts[4]);
+    }
+  }, []);
+
+  // If an active item is chosen elsewhere, ensure mode follows so URL updates correctly
+  useEffect(() => {
+    if (activeFileId) setMode(AppMode.WORKSPACE);
+  }, [activeFileId]);
+
+  useEffect(() => {
+    if (activeSubjectId) setMode(AppMode.ACADEMY);
+  }, [activeSubjectId]);
 
   const handleUpdateLesson = (updatedLesson: Lesson) => {
     setLessons(prev => prev.map(l => l.id === updatedLesson.id ? updatedLesson : l));
