@@ -32,7 +32,7 @@ const FakeTerminal: React.FC<FakeTerminalProps> = ({
   const packageManagers: Record<string, PackageManager> = {
     node: {
       install: async (packages: string[]) => {
-        // Simulate installation process
+        // Simulate installation process with interactive prompts
         const outputLines = [
           `npm ${packages.length > 0 ? 'install' : ''} ${packages.join(' ')}`,
           'npm WARN using --force',
@@ -77,6 +77,11 @@ const FakeTerminal: React.FC<FakeTerminalProps> = ({
             
             // Save updated package.json
             onFileChange('package.json', JSON.stringify(packageJson, null, 2));
+            
+            // Simulate dependency loading process
+            outputLines.push('');
+            outputLines.push('Dependency installation completed!');
+            outputLines.push('Dependencies will be available in the preview after refresh.');
           } catch (e) {
             console.error('Error updating package.json:', e);
           }
