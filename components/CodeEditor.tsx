@@ -148,12 +148,22 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language = 'ht
         suggestSelection: 'first',
         suggestOnTriggerCharacters: true,
         acceptSuggestionOnEnter: 'on',
+        acceptSuggestionOnCommitCharacter: true,
         tabSize: 2,
+        insertSpaces: true,
         quickSuggestions: { other: true, comments: true, strings: true },
+        quickSuggestionsDelay: 100,
         renderLineHighlight: 'all',
-        renderWhitespace: 'all',
+        renderWhitespace: 'boundary',
         smoothScrolling: true,
         'bracketPairColorization.enabled': true,
+        // Enable Emmet in the suggest widget
+        emmet: {
+          enabled: true,
+          showExpandedAbbreviation: 'always',
+          showAbbreviationSuggestions: true,
+          variables: {}
+        },
         scrollbar: {
           vertical: 'visible',
           horizontal: 'visible',
