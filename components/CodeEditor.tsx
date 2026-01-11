@@ -81,41 +81,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language = 'ht
                          (language === 'js' || language === 'javascript') ? 'javascript' : 
                          language;
 
-      monacoEditorRef.current = monaco.editor.create(editorRef.current, {
-        value: value,
-        language: monacoLang,
-        theme: 'vs-dark',
-        automaticLayout: false, 
-        fontSize: 14,
-        fontFamily: "'Fira Code', 'JetBrains Mono', 'Consolas', 'Courier New', monospace",
-        fontLigatures: true,
-        minimap: { enabled: false },
-        lineNumbers: 'on',
-        scrollBeyondLastLine: false,
-        wordWrap: 'on',
-        autoClosingBrackets: 'always',
-        autoClosingTags: 'always',
-        autoClosingQuotes: 'always',
-        formatOnType: true,
-        formatOnPaste: true,
-        suggestSelection: 'first',
-        suggestOnTriggerCharacters: true,
-        acceptSuggestionOnEnter: 'on',
-        tabSize: 2,
-        quickSuggestions: { other: true, comments: true, strings: true },
-        renderLineHighlight: 'all',
-        renderWhitespace: 'all',
-        smoothScrolling: true,
-        'bracketPairColorization.enabled': true,
-        scrollbar: {
-          vertical: 'visible',
-          horizontal: 'visible',
-          useShadows: false,
-          verticalScrollbarSize: 10,
-          horizontalScrollbarSize: 10
-        }
-      });
-
       // Initialize Emmet support based on language - do this BEFORE editor creation
       // Enhanced Emmet support for more languages
       if (['html', 'xml', 'xhtml', 'php', 'twig', 'blade', 'handlebars', 'ejs', 'mjs'].includes(monacoLang)) {
@@ -128,15 +93,16 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language = 'ht
         emmetMonaco.emmetHTML && emmetMonaco.emmetHTML(monaco, [monacoLang]); // Python can benefit from HTML emmet in f-strings or templates
       }
       
+      // Create the editor with proper settings
       monacoEditorRef.current = monaco.editor.create(editorRef.current, {
         value: value,
         language: monacoLang,
         theme: 'vs-dark',
-        automaticLayout: false, 
+        automaticLayout: true, 
         fontSize: 14,
         fontFamily: "'Fira Code', 'JetBrains Mono', 'Consolas', 'Courier New', monospace",
         fontLigatures: true,
-        minimap: { enabled: false },
+        minimap: { enabled: true },
         lineNumbers: 'on',
         scrollBeyondLastLine: false,
         wordWrap: 'on',
@@ -154,15 +120,34 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language = 'ht
         quickSuggestions: { other: true, comments: true, strings: true },
         quickSuggestionsDelay: 100,
         renderLineHighlight: 'all',
-        renderWhitespace: 'boundary',
+        renderWhitespace: 'all',
         smoothScrolling: true,
         'bracketPairColorization.enabled': true,
+        emptySelectionClipboard: false,
+        cursorBlinking: 'smooth',
+        mouseWheelZoom: false,
+        cursorSurroundingLines: 2,
+        cursorSurroundingLinesStyle: 'all',
+        mouseWheelScrollSensitivity: 1,
+        // Additional settings for better empty line handling
+        multiCursorModifier: 'ctrlCmd',
+        multiSelectModifier: 'ctrlCmd',
+        accessibilitySupport: 'off',
         // Enable Emmet in the suggest widget
         emmet: {
           enabled: true,
           showExpandedAbbreviation: 'always',
           showAbbreviationSuggestions: true,
           variables: {}
+        },
+        // Additional settings for better Emmet experience
+        
+        suggest: {
+          showKeywords: true,
+          showSnippets: true,
+          showClasses: true,
+          showFunctions: true,
+          showVariables: true,
         },
         scrollbar: {
           vertical: 'visible',

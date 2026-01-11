@@ -100,7 +100,7 @@ const generateLessons = (): Lesson[] => {
       title: 'L2: Semantic Sections',
       description: '### Qs4. Achievement Log\nEncapsulate your achievements in a `<section>`. List them using an unordered list (`<ul>`), bold the titles (`<b>`), and separate it from other content with a thematic break (`<hr>`).',
       initialCode: '<!-- Create achievement section -->',
-      validationRegex: '<section>[\\s\\S]*<ul>[\\s\\S]*<b>[\\s\\S]*<hr\\s*/?>',
+      validationRegex: '<section>[\s\S]*<ul>[\s\S]*<b>[\s\S]*<hr\s*/?>',
       solution: '<section>\n  <h2>Achievements</h2>\n  <ul>\n    <li><b>Hackathon Winner</b> 2024</li>\n  </ul>\n  <hr>\n</section>',
       successMessage: 'Semantic layout achieved. <section> is a key block element.'
     },
@@ -108,10 +108,76 @@ const generateLessons = (): Lesson[] => {
       id: 'html-l2-q5',
       subjectId: 'html',
       level: 2,
+      title: 'L2: Media - Images',
+      description: '### Qs5. Image Integration\nUse the `<img>` tag to display an image from the web. Use the following URL for practice: https://www.w3schools.com/tags/img_girl.jpg\n\nMake sure to include the `alt` attribute for accessibility. You can use "Sample Girl Image" as the alt text.\n\n**Practice Link**: [W3Schools Image Tag](https://www.w3schools.com/tags/tag_img.asp)',
+      initialCode: '<!-- Add image here -->',
+      validationRegex: '<img\s+[^>]*src\s*=\s*["\'][^"\']*/tags/img_girl\.jpg["\'][^>]*>',
+      solution: '<img src="https://www.w3schools.com/tags/img_girl.jpg" alt="Sample Girl Image">',
+      successMessage: 'Great! You have successfully added an image to your HTML page.'
+    },
+    {
+      id: 'html-l2-q6',
+      subjectId: 'html',
+      level: 2,
+      title: 'L2: Media - Video',
+      description: '### Qs6. Video Integration\nUse the `<video>` tag to embed a video from the web. Use the following URL for practice: https://www.w3schools.com/html/mov_bbb.mp4\n\nMake sure to include the `controls` attribute so users can play/pause the video.\n\n**Practice Link**: [W3Schools Video Tag](https://www.w3schools.com/tags/tag_video.asp)',
+      initialCode: '<!-- Add video here -->',
+      validationRegex: '<video\s+[^>]*controls[^>]*>\s*<source\s+[^>]*src\s*=\s*["\'][^"\']*/html/mov_bbb\.mp4["\'][^>]*>',
+      solution: '<video width="320" height="240" controls>\n  <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">\n</video>',
+      successMessage: 'Excellent! You have successfully added a video to your HTML page.'
+    },
+    {
+      id: 'html-l2-q7',
+      subjectId: 'html',
+      level: 2,
+      title: 'L2: Media - Audio',
+      description: '### Qs7. Audio Integration\nUse the `<audio>` tag to embed an audio file from the web. Use the following URL for practice: https://www.w3schools.com/html/horse.ogg\n\nMake sure to include the `controls` attribute so users can play/pause the audio.\n\n**Practice Link**: [W3Schools Audio Tag](https://www.w3schools.com/tags/tag_audio.asp)',
+      initialCode: '<!-- Add audio here -->',
+      validationRegex: '<audio\s+[^>]*controls[^>]*>\s*<source\s+[^>]*src\s*=\s*["\'][^"\']*/html/horse\.ogg["\'][^>]*>',
+      solution: '<audio controls>\n  <source src="https://www.w3schools.com/html/horse.ogg" type="audio/ogg">\n</audio>',
+      successMessage: 'Perfect! You have successfully added audio to your HTML page.'
+    },
+    {
+      id: 'html-l2-q8',
+      subjectId: 'html',
+      level: 2,
+      title: 'L2: Media - Additional Video Practice',
+      description: '### Qs8. Video Embedding Practice\nNow practice embedding a video with multiple format sources for broader browser compatibility. Use the video URL: https://www.w3schools.com/html/mov_bbb.mp4 and add a fallback source.\n\nMake sure to include the `controls`, `width`, and `height` attributes.\n\n**Practice Link**: [W3Schools Video Tag](https://www.w3schools.com/tags/tag_video.asp)',
+      initialCode: '<!-- Add video with multiple sources here -->',
+      validationRegex: '<video\s+[^>]*controls[^>]*>\s*<source\s+[^>]*src\s*=\s*["\'][^"\']*/html/mov_bbb\.mp4["\'][^>]*>\s*<source',
+      solution: '<video width="320" height="240" controls>\n  <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">\n  <source src="movie.webm" type="video/webm">\n  Your browser does not support the video tag.\n</video>',
+      successMessage: 'Great! You have successfully added a video with multiple sources for compatibility.'
+    },
+    {
+      id: 'html-l2-q9',
+      subjectId: 'html',
+      level: 2,
+      title: 'L2: Media - Additional Audio Practice',
+      description: '### Qs9. Audio Embedding Practice\nPractice embedding audio with multiple format sources. Use the audio URL: https://www.w3schools.com/html/horse.ogg and add a fallback source.\n\nMake sure to include the `controls` attribute.\n\n**Practice Link**: [W3Schools Audio Tag](https://www.w3schools.com/tags/tag_audio.asp)',
+      initialCode: '<!-- Add audio with multiple sources here -->',
+      validationRegex: '<audio\s+[^>]*controls[^>]*>\s*<source\s+[^>]*src\s*=\s*["\'][^"\']*/html/horse\.ogg["\'][^>]*>\s*<source',
+      solution: '<audio controls>\n  <source src="https://www.w3schools.com/html/horse.ogg" type="audio/ogg">\n  <source src="horse.mp3" type="audio/mpeg">\n  Your browser does not support the audio tag.\n</audio>',
+      successMessage: 'Perfect! You have successfully added audio with multiple sources for compatibility.'
+    },
+    {
+      id: 'html-l2-q10',
+      subjectId: 'html',
+      level: 2,
+      title: 'L2: Media - Image, Video and Audio Review',
+      description: '### Qs10. Media Integration Review\nCombine all media elements: embed an image, video, and audio file using the following URLs:\n- Image: https://www.w3schools.com/tags/img_girl.jpg\n- Video: https://www.w3schools.com/html/mov_bbb.mp4\n- Audio: https://www.w3schools.com/html/horse.ogg\n\nInclude appropriate attributes for each.\n\n**Practice Link**: [W3Schools Media Tags](https://www.w3schools.com/html/html5_video.asp)',
+      initialCode: '<!-- Add image, video, and audio elements here -->',
+      validationRegex: '<img[^>]*src[^>]*img_girl\.jpg[^>]*>\s*<video[^>]*controls[^>]*>\s*<source[^>]*mov_bbb\.mp4[^>]*>\s*<audio[^>]*controls[^>]*>\s*<source[^>]*horse\.ogg',
+      solution: '<img src="https://www.w3schools.com/tags/img_girl.jpg" alt="Sample Girl Image"><br>\n<video width="320" height="240" controls>\n  <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">\n  Your browser does not support the video tag.\n</video><br>\n<audio controls>\n  <source src="https://www.w3schools.com/html/horse.ogg" type="audio/ogg">\n  Your browser does not support the audio tag.\n</audio>',
+      successMessage: 'Excellent! You have successfully integrated all media types: image, video, and audio.'
+    },
+    {
+      id: 'html-l2-q11',
+      subjectId: 'html',
+      level: 2,
       title: 'L2: Legal Entities',
-      description: '### Qs5. Copyright & Trademark\nLegal symbols require specific entities. Print the symbols for **copyright** and **trademark** on your page.',
+      description: '### Qs11. Copyright & Trademark\nLegal symbols require specific entities. Print the symbols for **copyright** and **trademark** on your page.\n\n**Practice Link**: [W3Schools Character Entities](https://www.w3schools.com/html/html_entities.asp)',
       initialCode: '<!-- Print entities here -->',
-      validationRegex: '&copy;[\\s\\S]*&trade;',
+      validationRegex: '&copy;[\s\S]*&trade;',
       solution: '<p>Copyright &copy; 2025. All rights reserved &trade;.</p>',
       successMessage: 'Great. &copy; and &trade; are industry standards.'
     }
@@ -159,22 +225,76 @@ const generateLessons = (): Lesson[] => {
   });
 
   // --- OTHER SUBJECTS ---
-  lessons.push({ 
-    id: 'css-1', subjectId: 'css', level: 1, completed: false,
-    title: 'Visual Box Model', 
-    description: '### Layout Basics\nApply `royalblue` background and `20px` padding to the `div`.', 
-    initialCode: 'div {\n  /* Style here */\n}', 
-    validationRegex: 'padding:\\s*20px',
-    solution: 'div { background-color: royalblue; padding: 20px; }'
-  });
+  const practices = {
+    py: [
+      { id: 'py-pep8', title: 'Follow PEP 8', description: 'PEP 8 is the official style guide for Python. Adhering to it makes your code more readable. (No code needed, just a principle to remember).', solution: '# Follow PEP 8', validationRegex: /PEP 8/ },
+      { id: 'py-vars', title: 'Meaningful Variable Names', description: 'Use descriptive names for variables. Instead of `un`, use `user_name`. Declare `user_name = "Atiq"`', solution: 'user_name = "Atiq"', validationRegex: /user_name/ },
+      { id: 'py-comments', title: 'Explain "Why", Not "What"', description: 'Write comments to clarify complex logic, not to state the obvious. `# Calculate area` is less useful than `# Area calculation based on trapezoid formula`.', solution: '# This is a good comment', validationRegex: /#(.+)/ },
+      { id: 'py-comprehensions', title: 'List Comprehensions', description: 'Use list comprehensions for concise list creation. Create a list of squares from 0 to 9.', solution: 'squares = [x**2 for x in range(10)]', validationRegex: /\[.*for.*in.*\]/ },
+      { id: 'py-exceptions', title: 'Handle Exceptions Explicitly', description: 'Avoid bare `except:` blocks. Catch specific exceptions. Use a `try...except ValueError` block.', solution: 'try:\n  int("a")\nexcept ValueError:\n  print("Caught it!")', validationRegex: /except ValueError/ },
+      { id: 'py-with', title: 'Use `with` for Resources', description: '`with` statements ensure resources are properly managed. Open a file named `test.txt` for writing.', solution: 'with open("test.txt", "w") as f:\n  f.write("hello")', validationRegex: /with open/ },
+      { id: 'py-imports', title: 'Imports at the Top', description: 'Place all imports at the top of your `.py` file. Import the `math` module.', solution: 'import math', validationRegex: /import math/ },
+      { id: 'py-venv', title: 'Use Virtual Environments', description: 'Virtual environments isolate project dependencies. (Conceptual - no code to write here).', solution: '# python -m venv myenv', validationRegex: /venv/ },
+      { id: 'py-functions', title: 'Singular Purpose Functions', description: 'Functions should do one thing well. Define a function `add(a, b)` that returns their sum.', solution: 'def add(a, b):\n  return a + b', validationRegex: /def add/ },
+      { id: 'py-fstrings', title: 'F-Strings for Formatting', description: 'Use f-strings for easy string formatting (Python 3.6+). Create a string "Hello, Atiq".', solution: 'name = "Atiq"\nf"Hello, {name}"', validationRegex: /f"/ },
+      { id: 'py-default-args', title: 'Avoid Mutable Default Arguments', description: 'Using mutable default arguments can lead to unexpected behavior. (Conceptual).', solution: '# def my_func(my_list=[]): # Bad\n#   ...', validationRegex: /# Bad/ },
+      { id: 'py-enumerate', title: 'Use `enumerate`', description: 'Use `enumerate` to get both index and value from a list. Loop over `["a", "b"]` and print index and value.', solution: 'for i, v in enumerate(["a", "b"]):\n  print(i, v)', validationRegex: /enumerate/ },
+      { id: 'py-throwaway', title: 'Use `_` for Throwaway Variables', description: 'If you dont need a variable, use `_`. Unpack `(1, 2)` into `x` and a throwaway.', solution: 'x, _ = (1, 2)', validationRegex: /x, _/ },
+      { id: 'py-none', title: 'Check for `None` with `is`', description: 'Use `is None` or `is not None`. Check if `my_var` is None.', solution: 'my_var = None\nif my_var is None:\n  print("It is None.")', validationRegex: /is None/ },
+      { id: 'py-docstrings', title: 'Use Docstrings', description: 'Document your functions with docstrings. Add a docstring to a sample function.', solution: 'def my_func():\n  """This is a docstring."""\n  pass', validationRegex: /"""/ },
+    ],
+    js: [
+      { id: 'js-const', title: 'Use `const` by Default', description: 'Use `const` for variables that won\'t be reassigned. Declare a constant `API_KEY`.', solution: 'const API_KEY = "12345";', validationRegex: /const/ },
+      { id: 'js-strict', title: 'Use Strict Mode', description: '`\'use strict\';` helps catch common errors. Add it to the top of your script.', solution: "'use strict';", validationRegex: /'use strict';/ },
+      { id: 'js-equality', title: 'Use Strict Equality (`===`)', description: '`===` prevents type coercion. Compare `5` and `"5"`.', solution: '5 === "5"; // false', validationRegex: /===/ },
+      { id: 'js-arrow', title: 'Use Arrow Functions', description: 'Arrow functions offer shorter syntax. Create an arrow function `add` that takes two arguments.', solution: 'const add = (a, b) => a + b;', validationRegex: /=>/ },
+      { id: 'js-template', title: 'Use Template Literals', description: 'Template literals are better for string concatenation. Create "Hello, Atiq".', solution: 'const name = "Atiq";\n`Hello, ${name}`;', validationRegex: /`/ },
+      { id: 'js-no-globals', title: 'Avoid Global Variables', description: 'Globals can cause conflicts. Wrap your code in an IIFE (Immediately Invoked Function Expression) to create a private scope.', solution: '(function() {\n  let myVar = "secret";\n})();', validationRegex: /function\(\)/ },
+      { id: 'js-modules', title: 'Modularize with `import`/`export`', description: 'Use ES6 modules to organize code. (Conceptual for this editor).', solution: '// export const myVar = 5;\n// import { myVar } from "./file.js";', validationRegex: /export|import/ },
+      { id: 'js-async', title: 'Use `async/await`', description: 'Handle asynchronous operations cleanly with `async/await`.', solution: 'async function fetchData() {\n  // const data = await fetch(url);\n}', validationRegex: /async function/ },
+      { id: 'js-destructure', title: 'Destructure Objects/Arrays', description: 'Access properties cleanly. Destructure `name` from `{ name: "Atiq" }`.', solution: 'const { name } = { name: "Atiq" };', validationRegex: /\{.*?\}/ },
+      { id: 'js-spread', title: 'Use Spread Syntax (`...`)', description: 'Easily copy or merge arrays/objects. Copy an array `[1, 2, 3]`.', solution: 'const arr1 = [1, 2, 3];\nconst arr2 = [...arr1];', validationRegex: /\.\.\./ },
+      { id: 'js-promises', title: 'Handle Promise Errors', description: 'Always attach a `.catch()` to handle potential errors in Promises.', solution: 'fetch("url").catch(err => console.error(err));', validationRegex: /\.catch/ },
+      { id: 'js-array-methods', title: 'Use Modern Array Methods', description: 'Use `map`, `filter`, `reduce` over manual loops. Double every number in `[1, 2, 3]` using `map`.', solution: '[1, 2, 3].map(n => n * 2);', validationRegex: /\.map/ },
+      { id: 'js-lint', title: 'Use a Linter', description: 'Linters (like ESLint) enforce code quality. (Conceptual).', solution: '// npx eslint . --fix', validationRegex: /eslint/ },
+      { id: 'js-truthy', title: 'Understand Truthy/Falsy', description: 'Know what evaluates to `true` or `false` in conditionals. Check if an empty string is falsy.', solution: 'if (!"") {\n  console.log("falsy");\n}', validationRegex: /!""/ },
+      { id: 'js-no-new-primitive', title: 'Avoid `new` on Primitives', description: 'Don\'t use `new String()`, `new Number()`, or `new Boolean()`.', solution: 'const str = "hello"; // Not new String("hello")', validationRegex: /"hello"/ },
+    ],
+    css: [
+      { id: 'css-reset', title: 'Use a CSS Reset', description: 'Resets ensure browser consistency. (Conceptual).', solution: '/* Use normalize.css or a custom reset */', validationRegex: /reset/ },
+      { id: 'css-bem', title: 'Use BEM or a Naming Convention', description: 'BEM (Block, Element, Modifier) makes CSS scalable. `.card__title--large`', solution: '.card {} \n.card__title {} \n.card__title--large {}', validationRegex: /__/ },
+      { id: 'css-classes', title: 'Use Classes, Not IDs for Styling', description: 'Keep IDs for JS hooks. Use classes for styles. Style a `.user-profile`.', solution: '.user-profile { color: blue; }', validationRegex: /\.user-profile/ },
+      { id: 'css-specificity', title: 'Avoid Overly Specific Selectors', description: 'Long selectors are brittle. Instead of `.nav ul li a`, use a class like `.nav-link`.', solution: '.nav-link { text-decoration: none; }', validationRegex: /\.nav-link/ },
+      { id: 'css-relative-units', title: 'Use Relative Units', description: 'Use `rem` for fonts and `em` for context-based spacing. Set font size to `1.2rem`.', solution: 'body { font-size: 1.2rem; }', validationRegex: /rem/ },
+      { id: 'css-no-important', title: 'Minimize `!important`', description: '`!important` is a last resort. Avoid it.', solution: '/* Try to increase specificity instead */', validationRegex: /specificity/ },
+      { id: 'css-shorthand', title: 'Use Shorthand Properties', description: 'Use shorthand for `margin`, `padding`, etc. Set a margin of `10px 20px`.', solution: '.box { margin: 10px 20px; }', validationRegex: /margin: \d+px \d+px/ },
+      { id: 'css-flexbox-grid', title: 'Use Flexbox or Grid for Layout', description: 'They are modern and powerful. Make a container a flex container.', solution: '.container { display: flex; }', validationRegex: /display: flex/ },
+      { id: 'css-dry', title: 'Keep Code DRY', description: "Don't Repeat Yourself. Use utility classes or preprocessor mixins.", solution: '.text-center { text-align: center; }', validationRegex: /text-align/ },
+      { id: 'css-a11y', title: 'Design for Accessibility', description: 'Ensure good color contrast and add `:focus` states.', solution: 'a:focus { outline: 2px solid blue; }', validationRegex: /:focus/ },
+      { id: 'css-transforms', title: 'Animate `transform` and `opacity`', description: 'These are GPU-accelerated and performant. Animate a `transform`.', solution: '.thing { transition: transform 0.3s ease; }', validationRegex: /transition: transform/ },
+      { id: 'css-clamp', title: 'Use `clamp()` for Fluidity', description: '`clamp()` provides fluid typography/spacing. `font-size: clamp(1rem, 2.5vw, 1.5rem);`', solution: 'h1 { font-size: clamp(1rem, 2.5vw, 1.5rem); }', validationRegex: /clamp/ },
+      { id: 'css-lvha', title: 'Order Link Pseudo-classes', description: 'Set link styles in this order: :link, :visited, :hover, :active (LVHA).', solution: 'a:link {} a:visited {} a:hover {} a:active {}', validationRegex: /:link.*:visited.*:hover.*:active/ },
+      { id: 'css-max-width', title: 'Use `max-width` on Images', description: 'Prevents images from breaking layouts on small screens.', solution: 'img { max-width: 100%; height: auto; }', validationRegex: /max-width: 100%/ },
+      { id: 'css-comments', title: 'Comment Your CSS', description: 'Explain complex selectors or `z-index` stacking contexts.', solution: '/* Complex component ----- */', validationRegex: /\/\*.*\*\// },
+    ]
+  };
 
-  lessons.push({ 
-    id: 'js-1', subjectId: 'js', level: 1, completed: false,
-    title: 'Dynamic Variables', 
-    description: '### State Declaration\nDeclare a `const` named `developer` with the value "Atiq".', 
-    initialCode: '', 
-    validationRegex: 'const\\s+developer\\s*=\\s*[\'"]Atiq[\'"]', 
-    solution: 'const developer = "Atiq";'
+  Object.values(practices).forEach((subjectPractices, i) => {
+    const subjectId = Object.keys(practices)[i];
+    subjectPractices.forEach(p => {
+      lessons.push({
+        id: p.id,
+        subjectId: subjectId,
+        level: 1,
+        completed: false,
+        title: p.title,
+        description: `### Best Practice\n${p.description}`,
+        initialCode: `# Practice: ${p.title}`,
+        validationRegex: p.validationRegex.source,
+        solution: p.solution,
+        successMessage: `Great! You've applied the "${p.title}" best practice.`
+      } as Lesson)
+    });
   });
 
   return lessons;

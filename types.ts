@@ -1,4 +1,5 @@
 export enum AppMode {
+  HOME = 'HOME',
   ACADEMY = 'ACADEMY',
   WORKSPACE = 'WORKSPACE'
 }
@@ -44,6 +45,15 @@ export interface TerminalLog {
   type: 'log' | 'error' | 'info';
   content: string;
   timestamp: Date;
+}
+
+
+export interface Project {
+  id: number;
+  name: string;
+  files: FileNode[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface UserState {

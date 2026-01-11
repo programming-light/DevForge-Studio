@@ -7,6 +7,7 @@ import AcademyMode from './components/AcademyMode';
 import WorkspaceMode from './components/WorkspaceMode';
 import AdminPortal from './components/AdminPortal';
 import Dashboard from './components/Dashboard';
+import HomePage from './components/HomePage';
 import JSZip from 'jszip';
 
 const App: React.FC = () => {
@@ -17,12 +18,13 @@ const App: React.FC = () => {
       const parts = path.split('/').filter(Boolean);
       if (parts[0] === 'workspace') return AppMode.WORKSPACE;
       if (parts[0] === 'academy') return AppMode.ACADEMY;
+      if (parts[0] === 'home' || parts.length === 0) return AppMode.HOME;
     } catch (e) {
       // ignore
     }
 
     const saved = localStorage.getItem('master_ide_mode');
-    return saved ? (JSON.parse(saved) as AppMode) : AppMode.ACADEMY;
+    return saved ? (JSON.parse(saved) as AppMode) : AppMode.HOME;
   });
 
 
@@ -136,7 +138,10 @@ const App: React.FC = () => {
         if (activeSubjectId) return `/academy/subject/${activeSubjectId}`;
         return '/academy';
       }
-      return '/';
+      if (mode === AppMode.HOME) {
+        return '/academy';
+      }
+      return '/academy';
     };
     const path = makePath();
     if (window.location.pathname !== path) {
@@ -155,6 +160,8 @@ const App: React.FC = () => {
         setMode(AppMode.ACADEMY);
         if (parts[1] === 'subject' && parts[2]) setActiveSubjectId(parts[2]);
         if (parts[3] === 'lesson' && parts[4]) setActiveLessonId(parts[4]);
+      } else if (parts[0] === 'home' || parts.length === 0) {
+        setMode(AppMode.HOME);
       }
     };
     window.addEventListener('popstate', onPop);
@@ -171,17 +178,14 @@ const App: React.FC = () => {
       setMode(AppMode.ACADEMY);
       if (parts[1] === 'subject' && parts[2]) setActiveSubjectId(parts[2]);
       if (parts[3] === 'lesson' && parts[4]) setActiveLessonId(parts[4]);
+    } else if (parts[0] === 'home' || parts.length === 0) {
+      setMode(AppMode.HOME);
     }
   }, []);
 
-  // If an active item is chosen elsewhere, ensure mode follows so URL updates correctly
-  useEffect(() => {
-    if (activeFileId) setMode(AppMode.WORKSPACE);
-  }, [activeFileId]);
+ 
 
-  useEffect(() => {
-    if (activeSubjectId) setMode(AppMode.ACADEMY);
-  }, [activeSubjectId]);
+
 
   const handleUpdateLesson = (updatedLesson: Lesson) => {
     setLessons(prev => prev.map(l => l.id === updatedLesson.id ? updatedLesson : l));
@@ -272,7 +276,9 @@ const App: React.FC = () => {
       />
 
       <div className="flex-1 flex overflow-hidden">
-        {mode === AppMode.ACADEMY ? (
+        {mode === AppMode.HOME ? (
+          <HomePage />
+        ) : mode === AppMode.ACADEMY ? (
           activeSubjectId ? (
             <AcademyMode 
               lessons={lessons.filter(l => l.subjectId === activeSubjectId)} 

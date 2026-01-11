@@ -98,7 +98,7 @@ const FakeTerminal: React.FC<FakeTerminalProps> = ({
     },
     python: {
       install: async (packages: string[]) => {
-        // Simulate pip installation process
+        // Simulate pip installation process with interactive prompts
         const outputLines = [
           `Collecting ${packages.join(' ')}`,
           '  Downloading package1-1.0.0-py3-none-any.whl (10 kB)',
@@ -126,6 +126,11 @@ const FakeTerminal: React.FC<FakeTerminalProps> = ({
             
             // Save updated requirements.txt
             onFileChange('requirements.txt', newPackages.join('\n'));
+            
+            // Simulate dependency loading process
+            outputLines.push('');
+            outputLines.push('Python dependency installation completed!');
+            outputLines.push('Dependencies will be available in the preview after refresh.');
           } catch (e) {
             console.error('Error updating requirements.txt:', e);
           }
@@ -329,26 +334,33 @@ const FakeTerminal: React.FC<FakeTerminalProps> = ({
       </div>
 
       <form className="border-t border-[#30363d] bg-[#161b22] p-2" onSubmit={handleSubmit}>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <div className="flex items-center space-x-1">
+            <span className="text-[8px] font-bold uppercase tracking-widest text-[#8b949e]">{image.toUpperCase()}</span>
+            {image === 'node' ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5 5 10 10 0 1 0 0-20z" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#30a982" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              </svg>
+            )}
+          </div>
+          <span className="text-[#58a6ff] font-bold">$</span>
           <input 
             value={input} 
             onChange={(e) => setInput(e.target.value)} 
             onKeyDown={handleKeyDown}
-            className="flex-1 bg-[#0b0f13] border border-[#30363d] rounded px-2 py-1 text-xs text-white" 
-            placeholder={`Type a command and press Enter (Fake ${image} environment)`} 
+            className="flex-1 bg-transparent border-none outline-none font-mono text-xs text-white py-1 px-1 caret-white" 
+            placeholder="Type a command..." 
+            // Add mobile-specific attributes to prevent zooming and improve keyboard behavior
+            inputMode="text"
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck="false"
           />
-          <button type="submit" className="px-3 py-1 bg-[#238636] rounded text-white">Run</button>
-        </div>
-        
-        <div className="mt-2 text-xs text-[#8b949e]">
-          Fake terminal: npm/yarn/pip install adds to package.json/requirements.txt
-          <button 
-            type="button"
-            onClick={connectNativeTerminal}
-            className="ml-2 text-[#58a6ff] hover:underline"
-          >
-            Connect native terminal for real installations
-          </button>
         </div>
       </form>
     </div>

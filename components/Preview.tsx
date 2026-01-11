@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 
 interface PreviewProps {
   code: string;
@@ -8,6 +8,22 @@ interface PreviewProps {
 }
 
 const Preview: React.FC<PreviewProps> = ({ code, language = 'html', dependencies = {}, showWelcome = false }) => {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  // Add event listener to handle manual exit from fullscreen
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        setIsFullscreen(false);
+      }
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
   const srcDoc = useMemo(() => {
     if (showWelcome) {
       return `
@@ -212,14 +228,56 @@ const Preview: React.FC<PreviewProps> = ({ code, language = 'html', dependencies
     `;
   }, [code, language, dependencies, showWelcome]);
 
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+    
+    // Request fullscreen if not already in fullscreen
+    if (!isFullscreen) {
+      const iframe = document.querySelector('iframe[title="DevForge Preview"]');
+      if (iframe && iframe.requestFullscreen) {
+        iframe.requestFullscreen().catch(e => console.log('Fullscreen request failed:', e));
+      }
+    } else {
+      // Exit fullscreen if currently in fullscreen
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(e => console.log('Fullscreen exit failed:', e));
+      }
+    }
+  };
+
   return (
-    <iframe
-      key={`${language}-${showWelcome}`}
-      title="DevForge Preview"
-      srcDoc={srcDoc}
-      className="w-full h-full border-none bg-[#0d1117]"
-      sandbox="allow-scripts allow-modals allow-same-origin"
-    />
+    <div className="w-full h-full relative">
+      <div className="absolute top-2 right-2 z-10 flex gap-2">
+        <button 
+          onClick={toggleFullscreen}
+          className="p-2 bg-[#161b22] border border-[#30363d] rounded-lg text-[#8b949e] hover:text-white hover:bg-[#30363d] transition-colors"
+          title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+        >
+          {isFullscreen ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+              <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+              <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+              <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+              <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+              <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+              <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+            </svg>
+          )}
+        </button>
+      </div>
+      <iframe
+        key={`${language}-${showWelcome}`}
+        title="DevForge Preview"
+        srcDoc={srcDoc}
+        className={`w-full h-full border-none bg-[#0d1117] ${isFullscreen ? 'fixed inset-0 z-[100] w-screen h-screen' : ''}`}
+        sandbox="allow-scripts allow-modals allow-same-origin"
+      />
+    </div>
   );
 };
 

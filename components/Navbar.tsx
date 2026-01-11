@@ -51,6 +51,15 @@ const Navbar: React.FC<NavbarProps> = ({
         <div className="hidden sm:block h-6 w-px bg-[#30363d]" />
 
         <div className="flex items-center space-x-0.5 p-0.5 bg-[#0d1117] rounded-lg border border-[#30363d]">
+          {/* <button 
+            onClick={() => setMode(AppMode.HOME)}
+            className={`flex items-center space-x-2 px-2.5 md:px-4 py-1.5 rounded-md transition-all ${
+              mode === AppMode.HOME ? 'bg-[#21262d] text-white shadow-sm' : 'text-[#8b949e] hover:text-white'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-black uppercase tracking-widest hidden md:inline">Home</span>
+          </button> */}
           <button 
             onClick={() => setMode(AppMode.ACADEMY)}
             className={`flex items-center space-x-2 px-2.5 md:px-4 py-1.5 rounded-md transition-all ${
@@ -73,10 +82,7 @@ const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       <div className="flex items-center space-x-2 md:space-x-4">
-        <div className="hidden sm:flex items-center bg-[#0d1117] border border-[#30363d] rounded px-2 py-1">
-          <Search className="w-4 h-4 text-[#8b949e] mr-2" />
-          <input placeholder="Search files & code (Enter)" onKeyDown={(e) => { if (e.key === 'Enter') { const v = (e.target as HTMLInputElement).value.trim(); if (v && typeof onSearch === 'function') onSearch(v); } }} className="bg-transparent text-sm text-[#c9d1d9] outline-none placeholder-[#6e7580]" />
-        </div>
+
         {mode === AppMode.WORKSPACE && (
           <button 
             onClick={onDownload}

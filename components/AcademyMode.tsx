@@ -318,3 +318,4 @@ const AcademyMode: React.FC<AcademyModeProps> = ({
 };
 
 export default AcademyMode;
+ 

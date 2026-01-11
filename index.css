@@ -32,3 +32,8 @@
 .w-6.cursor-col-resize:hover {
   background-color: rgba(48,54,61,0.06);
 }
+
+.bg-grid-gray-700\/25 {
+    background-image: linear-gradient(rgba(128, 128, 128, 0.25) 1px, transparent 1px), linear-gradient(to right, rgba(128, 128, 128, 0.25) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
